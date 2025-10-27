@@ -13,7 +13,7 @@ https://disk.yandex.ru/d/G8AGjE_7NAOf0Q
 
 
 #### Сиквенс-диаграмма:
-![Image alt](https://github.com/ValentinGolikov/Sensors-Queuing-System/blob/main/sequence_diagram.png)
+![Image alt]()
 #### Диаграмма классов:
 ![Image alt](https://github.com/ValentinGolikov/Sensors-Queuing-System/blob/main/class_daiagram.png)
 #### Flowchart:
