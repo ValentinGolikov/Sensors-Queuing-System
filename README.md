@@ -21,5 +21,5 @@ https://disk.yandex.ru/d/G8AGjE_7NAOf0Q
 
 3. **Написание программы**
 
-...in progress...
+... in progress ...
   
