@@ -1,23 +1,22 @@
 package Engine;
 
 public class Request {
-    private final String id;
+    private static int nextId = 1;
+    private final int id;
     private final DateTime generationTime;
-    private Priority priority;
+    private final Priority priority;
     private RequestStatus status;
     private String data;
 
-    public Request() {
-        this.id = Hashing.hash();
+    public Request(Priority priority) {
+        this.id = nextId++;
         this.generationTime = new DateTime();
+        this.priority = priority;
         this.status = RequestStatus.NEW;
     }
 
-    public String getId() {
+    public int getId() {
         return id;
-    }
-    public void setPriority(Priority priority) {
-        this.priority = priority;
     }
     public Priority getPriority() {
         return priority;
