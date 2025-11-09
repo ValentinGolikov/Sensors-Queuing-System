@@ -1,34 +1,81 @@
 package Engine;
 
+import javax.swing.*;
 import java.util.ArrayList;
-import java.util.Arrays;
 
 public class Buffer {
     private final int size;
-    private int ptr;
-    private boolean isFull;
+    private final LimitedInteger ptr;
     private final ArrayList<Request> requests;
+
+    private boolean hasSpace(){
+        for (Request request : requests) {
+            if (request == null) {
+                return false;
+            }
+        }
+        return true;
+    }
 
     public Buffer(int size){
         this.size = size;
-        this.ptr = 0;
-        this.isFull = false;
-        this.requests = new ArrayList<>(Arrays.asList(new Request[size]));
+        this.ptr = new LimitedInteger(size - 1);
+        this.requests = new ArrayList<>(size);
+        for (int i = 0; i < size; i++) {
+            requests.add(null);
+        }
     }
 
     public int getSize() {
         return size;
     }
 
-    public void addRequest(Request request) {
-        requests.set(ptr, request);
-        System.out.println(this.ptr);
-        if (++this.ptr >= this.size){
-            this.ptr = 0;
+    public RequestStatus addRequest(Request request) {
+        if (hasSpace()) {
+            return RequestStatus.REJECTED;
         }
+        request.setStatus(RequestStatus.IN_BUFFER);
+        requests.set(ptr.getValue(), request);
+        this.ptr.increment();
+        return RequestStatus.IN_BUFFER;
     }
 
-    public void getNextRequest() {
+    public Request getNextRequest() {
+        LimitedInteger pointer = new LimitedInteger(this.size - 1, this.ptr.getValue());
+        while (requests.get(pointer.getValue()) == null) {
+            pointer.increment();
+        }
+        Request req = requests.get(pointer.getValue());
+        Priority priority = req.getPriority();
 
+        int current_pointer = pointer.getValue();
+        pointer.increment();
+        Request tempReq;
+
+        while(pointer.getValue() != this.ptr.getValue()) {
+            tempReq = requests.get(pointer.getValue());
+            if (tempReq != null) {
+                if (tempReq.getPriority().ordinal() < priority.ordinal()) {
+                    priority = tempReq.getPriority();
+                    req = tempReq;
+                    current_pointer = pointer.getValue();
+                }
+                else if (tempReq.getPriority().ordinal() == priority.ordinal()) {
+                    if (tempReq.getGenerationTime().compareTo(req.getGenerationTime()) < 0) {
+                        current_pointer = pointer.getValue();
+                        req = tempReq;
+                    }
+                }
+            }
+        pointer.increment();
+        }
+        requests.set(current_pointer, null);
+        this.ptr.increment();
+        return req;
+    }
+
+    public void removeRequest() {
+        requests.set(this.ptr.getValue(), null);
+        this.ptr.increment();
     }
 }
