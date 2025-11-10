@@ -1,18 +1,19 @@
 package Engine.Threads;
 
-import Engine.Priority;
-import Engine.Request;
+import Engine.Controller;
+import Engine.DataPack;
 
-import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-// Поток для METRICS заявок (самая высокая нагрузка)
+import static Engine.TrainConfig.*;
+
 public class MetricsGenerator implements Runnable {
     private final AtomicBoolean running;
-    private final Random random = new Random();
+    private final Controller controller;
 
-    public MetricsGenerator (AtomicBoolean running) {
+    public MetricsGenerator (AtomicBoolean running, Controller controller) {
         this.running = running;
+        this.controller = controller;
     }
 
     @Override
@@ -21,13 +22,13 @@ public class MetricsGenerator implements Runnable {
 
         while (running.get()) {
             try {
-                // METRICS генерируются очень часто - 3-5 заявок в секунду
-                Thread.sleep(200 + random.nextInt(300));
+                Thread.sleep(300);
 
-                Request request = new Request(Priority.METRICS);
-
-                System.out.println(Thread.currentThread().getName() + " создал: " +
-                        request.getPriority() + " (ID: " + request.getId() + ")");
+                controller.submitDataPack(DataPack.createNormalScenario(
+                        DataPack.getRandomElement(TRAINS),
+                        DataPack.getRandomElement(CARRIAGES),
+                        DataPack.getRandomElement(WHEELS)
+                ));
 
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
