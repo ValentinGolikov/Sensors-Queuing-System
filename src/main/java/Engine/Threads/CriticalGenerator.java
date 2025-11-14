@@ -4,16 +4,19 @@ import Engine.Controller;
 import Engine.DataPack;
 
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static Engine.TrainConfig.*;
 
 public class CriticalGenerator implements Runnable {
     private final AtomicBoolean running;
     private final Controller controller;
+    private final AtomicInteger totalGenerated;
 
-    public CriticalGenerator (AtomicBoolean running, Controller controller) {
+    public CriticalGenerator (AtomicBoolean running, Controller controller, AtomicInteger totalGenerated) {
         this.running = running;
         this.controller = controller;
+        this.totalGenerated = totalGenerated;
     }
 
     @Override
@@ -29,6 +32,8 @@ public class CriticalGenerator implements Runnable {
                         DataPack.getRandomElement(CARRIAGES),
                         DataPack.getRandomElement(WHEELS)
                 ));
+
+                totalGenerated.incrementAndGet();
 
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();

@@ -1,5 +1,7 @@
 package Engine;
 
+import Engine.Threads.RequestsGenerator;
+
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -26,19 +28,26 @@ public class Controller implements Runnable {
         System.out.println("Controller started");
 
         while (isRunning) {
-            try {
-                DataPack dataPack = dataPackQueue.take();
+            if (RequestsGenerator.isStopped() && dataPackQueue.isEmpty()) {
+                isRunning = false;
+            }
+            else {
+                try {
+                    if (!dataPackQueue.isEmpty()) {
+                        DataPack dataPack = dataPackQueue.take();
 
-                Request request = convertToRequest(dataPack);
+                    Request request = convertToRequest(dataPack);
 
-                requestsQueue.put(request);
+                    requestsQueue.put(request);
+                    }
 
-            } catch (InterruptedException e) {
-                System.out.println("Controller interrupted");
-                Thread.currentThread().interrupt();
-                break;
-            } catch (Exception e) {
-                System.err.println("Error in Controller: " + e.getMessage());
+                } catch (InterruptedException e) {
+                    System.out.println("Controller interrupted");
+                    Thread.currentThread().interrupt();
+                    break;
+                } catch (Exception e) {
+                    System.err.println("Error in Controller: " + e.getMessage());
+                }
             }
         }
 
@@ -81,13 +90,5 @@ public class Controller implements Runnable {
      */
     public BlockingQueue<Request> getRequestsQueue() {
         return requestsQueue;
-    }
-
-    /**
-     * Остановка Controller
-     */
-    public void stop() {
-        isRunning = false;
-        Thread.currentThread().interrupt();
     }
 }

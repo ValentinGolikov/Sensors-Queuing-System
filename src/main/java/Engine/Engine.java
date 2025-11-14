@@ -4,9 +4,29 @@ import Engine.Threads.RequestsGenerator;
 
 public class Engine {
     static void main(String[] args) {
+        Buffer buf = new Buffer(30);
+        Controller controller = new Controller();
+
+        RequestsGenerator requestsGenerator = new RequestsGenerator(controller);
+        ReceptionDispatcher receptionDispatcher = new ReceptionDispatcher(controller, buf);
+        SelectionDispatcher selectionDispatcher = new SelectionDispatcher(buf);
+
+        Thread receptionDispatcherThread = new Thread(receptionDispatcher, "receptionDispatcherThread");
+        Thread controllerThread = new Thread(controller, "controllerThread");
+        Thread requestsGeneratorThread = new Thread(requestsGenerator, "requestsGeneratorThread");
+        Thread selectionDispatcherThread = new Thread(selectionDispatcher, "selectionDispatcherThread");
+
+        controllerThread.start();
+        receptionDispatcherThread.start();
+        requestsGeneratorThread.start();
+        selectionDispatcherThread.start();
+
 
         try {
-            RequestsGenerator.start();
+            controllerThread.join();
+            receptionDispatcherThread.join();
+            requestsGeneratorThread.join();
+            selectionDispatcherThread.join();
         } catch (InterruptedException e) {
             System.err.println(e);
         }
@@ -21,7 +41,6 @@ public class Engine {
         Request req8 = new Request(Priority.METRICS);
         Request req9 = new Request(Priority.WARNING);
 
-        Buffer buf = new Buffer(9);
         buf.addRequest(req1);
         buf.addRequest(req2);
         buf.addRequest(req3);
