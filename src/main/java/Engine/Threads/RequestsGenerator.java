@@ -27,15 +27,15 @@ public class RequestsGenerator implements Runnable {
         warningThread = new Thread(new WarningGenerator(running, controller, totalGenerated), "Warning-Generator");
         metricsThread = new Thread(new MetricsGenerator(running, controller, totalGenerated), "Metrics-Generator");
 
-        criticalThread.start();
-        warningThread.start();
         metricsThread.start();
+        warningThread.start();
+        criticalThread.start();
 
         try {
             // Ждем завершения всех потоков-генераторов
-            criticalThread.join();
-            warningThread.join();
             metricsThread.join();
+            warningThread.join();
+            criticalThread.join();
 
             System.out.println("Всего сгенерировано заявок: " + totalGenerated.get());
             System.out.println("=== ГЕНЕРАТОР ЗАЯВОК ЗАВЕРШЕН ===");

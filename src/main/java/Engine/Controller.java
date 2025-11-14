@@ -62,7 +62,7 @@ public class Controller implements Runnable {
 
         Request request = new Request(priority);
 
-        request.setData(String.format("Train %s; TrainCarriage %s; Wheel %s;\nData:\n%s",
+        request.setData(String.format("%s; %s; %s;\nData:\n%s",
                 dataPack.getTrainNumber(),
                 dataPack.getTrainCarriageNumber(),
                 dataPack.getWheelNumber(),
