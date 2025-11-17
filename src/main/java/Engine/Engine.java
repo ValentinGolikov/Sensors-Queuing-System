@@ -3,7 +3,7 @@ package Engine;
 import Engine.Threads.RequestsGenerator;
 
 public class Engine {
-    static void main(String[] args) {
+    public static void main(String[] args) {
         Buffer buf = new Buffer(10);
         Controller controller = new Controller();
 
@@ -20,7 +20,6 @@ public class Engine {
         receptionDispatcherThread.start();
         requestsGeneratorThread.start();
         selectionDispatcherThread.start();
-
 
         try {
             controllerThread.join();
