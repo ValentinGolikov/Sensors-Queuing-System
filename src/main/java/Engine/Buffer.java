@@ -72,6 +72,7 @@ public class Buffer {
         }
         requests.set(current_pointer, null);
         this.ptr.increment();
+        req.setStatus(RequestStatus.PROCESSED);
         return req;
     }
 
