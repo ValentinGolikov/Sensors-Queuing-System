@@ -1,18 +1,22 @@
 package Engine.Threads;
 
-import Engine.Priority;
-import Engine.Request;
+import Engine.Controller;
+import Engine.DataPack;
 
-import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
-// Поток для CRITICAL заявок (самый редкий)
+import static Engine.TrainConfig.*;
+
 public class CriticalGenerator implements Runnable {
     private final AtomicBoolean running;
-    private final Random random = new Random();
+    private final Controller controller;
+    private final AtomicInteger totalGenerated;
 
-    public CriticalGenerator (AtomicBoolean running) {
+    public CriticalGenerator (AtomicBoolean running, Controller controller, AtomicInteger totalGenerated) {
         this.running = running;
+        this.controller = controller;
+        this.totalGenerated = totalGenerated;
     }
 
     @Override
@@ -21,13 +25,15 @@ public class CriticalGenerator implements Runnable {
 
         while (running.get()) {
             try {
-                // CRITICAL генерируются редко - раз в 2-3 секунды
-                Thread.sleep(2000 + random.nextInt(1000));
+                Thread.sleep(5000);
 
-                Request request = new Request(Priority.CRITICAL);
+                controller.submitDataPack(DataPack.createCriticalScenario(
+                        DataPack.getRandomElement(TRAINS),
+                        DataPack.getRandomElement(CARRIAGES),
+                        DataPack.getRandomElement(WHEELS)
+                ));
 
-                System.out.println(Thread.currentThread().getName() + " создал: " +
-                        request.getPriority() + " (ID: " + request.getId() + ")");
+                totalGenerated.incrementAndGet();
 
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();

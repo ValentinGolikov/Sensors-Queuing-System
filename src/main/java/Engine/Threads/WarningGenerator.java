@@ -1,18 +1,22 @@
 package Engine.Threads;
 
-import Engine.Priority;
-import Engine.Request;
+import Engine.Controller;
+import Engine.DataPack;
 
-import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
-// Поток для WARNING заявок (средняя частота)
+import static Engine.TrainConfig.*;
+
 public class WarningGenerator implements Runnable {
     private final AtomicBoolean running;
-    private final Random random = new Random();
+    private final Controller controller;
+    private final AtomicInteger totalGenerated;
 
-    public WarningGenerator (AtomicBoolean running) {
+    public WarningGenerator (AtomicBoolean running, Controller controller, AtomicInteger totalGenerated) {
         this.running = running;
+        this.controller = controller;
+        this.totalGenerated = totalGenerated;
     }
 
     @Override
@@ -21,13 +25,15 @@ public class WarningGenerator implements Runnable {
 
         while (running.get()) {
             try {
-                // WARNING генерируются чаще - раз в 1-2 секунды
-                Thread.sleep(1000 + random.nextInt(1000));
+                Thread.sleep(2500);
 
-                Request request = new Request(Priority.WARNING);
+                controller.submitDataPack(DataPack.createWarningScenario(
+                        DataPack.getRandomElement(TRAINS),
+                        DataPack.getRandomElement(CARRIAGES),
+                        DataPack.getRandomElement(WHEELS)
+                ));
 
-                System.out.println(Thread.currentThread().getName() + " создал: " +
-                        request.getPriority() + " (ID: " + request.getId() + ")");
+                totalGenerated.incrementAndGet();
 
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();

@@ -32,6 +32,7 @@ public class Buffer {
 
     public RequestStatus addRequest(Request request) {
         if (hasSpace()) {
+            System.out.println("====================REJECTED==================== " + request.getPriority());
             return RequestStatus.REJECTED;
         }
         request.setStatus(RequestStatus.IN_BUFFER);
@@ -71,6 +72,7 @@ public class Buffer {
         }
         requests.set(current_pointer, null);
         this.ptr.increment();
+        req.setStatus(RequestStatus.PROCESSED);
         return req;
     }
 
