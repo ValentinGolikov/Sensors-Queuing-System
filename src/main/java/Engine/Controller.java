@@ -93,4 +93,9 @@ public class Controller implements Runnable {
     public BlockingQueue<Request> getRequestsQueue() {
         return requestsQueue;
     }
+
+    public void stop() {
+        isRunning = false;
+        System.out.println("Controller: получена команда остановки");
+    }
 }

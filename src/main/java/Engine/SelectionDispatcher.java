@@ -4,27 +4,39 @@ import Engine.Devices.Device;
 import Engine.Devices.Device1;
 import Engine.Devices.Device2;
 import Engine.Devices.Device3;
-<<<<<<< HEAD
-=======
 import Engine.Threads.ThreadPauser;
 import Engine.Tracking.ManualModeController;
->>>>>>> 148240b (auto_mode_v0.3.1)
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class SelectionDispatcher implements Runnable {
     private final Buffer buffer;
-    private final Device device1;
-    private final Device device2;
-    private final Device device3;
+    private Device device1;
+    private Device device2;
+    private Device device3;
     private final AtomicBoolean running;
+    private final ManualModeController manualController;
 
-    private final Thread device1Thread;
-    private final Thread device2Thread;
-    private final Thread device3Thread;
+    private Thread device1Thread;
+    private Thread device2Thread;
+    private Thread device3Thread;
 
     public SelectionDispatcher(Buffer buffer) {
+        this(buffer, null);
+        // Создаем приборы
+        this.device1 = new Device1();
+        this.device2 = new Device2();
+        this.device3 = new Device3();
+
+        // Запускаем потоки приборов
+        this.device1Thread = new Thread(device1, "Device1-Thread");
+        this.device2Thread = new Thread(device2, "Device2-Thread");
+        this.device3Thread = new Thread(device3, "Device3-Thread");
+    }
+
+    public SelectionDispatcher(Buffer buffer, ManualModeController manualController) {
         this.buffer = buffer;
+        this.manualController = manualController;
         this.running = new AtomicBoolean(true);
 
         // Создаем приборы
@@ -49,15 +61,18 @@ public class SelectionDispatcher implements Runnable {
 
         while (running.get()) {
             try {
-<<<<<<< HEAD
-=======
                 ThreadPauser.checkPause();
->>>>>>> 148240b (auto_mode_v0.3.1)
                 Request request = buffer.getNextRequest();
                 if (request != null) {
                     dispatchRequest(request);
+
+                    // Показываем состояние после обработки (только в ручном режиме)
+                    if (manualController != null) {
+                        manualController.displaySystemState(buffer, this);
+                    }
                 }
             } catch (InterruptedException e) {
+                System.err.println("SelectionDispatcher прерван: " + e.getMessage());
                 Thread.currentThread().interrupt();
                 break;
             }
@@ -116,20 +131,29 @@ public class SelectionDispatcher implements Runnable {
         return device;
     }
 
-    public void stop() {
-        running.set(false);
-    }
-
     // Методы для получения статистики
     public int getDevice1ProcessedCount() {
         return device1.getProcessedCount();
     }
-
     public int getDevice2ProcessedCount() {
         return device2.getProcessedCount();
     }
-
     public int getDevice3ProcessedCount() {
         return device3.getProcessedCount();
     }
+
+    public Request getDevice1CurrentRequest() { return device1.getCurrentRequest(); }
+    public Request getDevice2CurrentRequest() { return device2.getCurrentRequest(); }
+    public Request getDevice3CurrentRequest() { return device3.getCurrentRequest(); }
+
+    public void stop() {
+        running.set(false);
+        System.out.println("SelectionDispatcher: получена команда остановки");
+
+        // Также останавливаем устройства
+        device1.stop();
+        device2.stop();
+        device3.stop();
+    }
+
 }

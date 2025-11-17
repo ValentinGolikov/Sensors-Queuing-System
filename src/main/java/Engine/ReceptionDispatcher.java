@@ -43,4 +43,9 @@ public class ReceptionDispatcher implements Runnable {
 
         System.out.println("ReceptionDispatcher stopped");
     }
+
+    public void stop() {
+        isRunning = false;
+        System.out.println("ReceptionDispatcher: получена команда остановки");
+    }
 }

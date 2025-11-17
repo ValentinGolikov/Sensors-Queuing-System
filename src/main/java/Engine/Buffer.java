@@ -1,5 +1,7 @@
 package Engine;
 
+import Engine.Tracking.RequestTracker;
+
 import javax.swing.*;
 import java.util.ArrayList;
 
@@ -26,14 +28,21 @@ public class Buffer {
         }
     }
 
-    public int getSize() {
-        return size;
+    public int getCurrentSize() {
+        int count = 0;
+        for (Request request: requests){
+            if (request != null){
+                count++;
+            }
+        }
+        return count;
     }
 
     public RequestStatus addRequest(Request request) {
         if (!hasSpace()) {
             System.out.println("===================INIT REJECTION=================== " + requests.get(ptr.getValue()).getPriority() + " " + requests.get(ptr.getValue()).getId());
         }
+        RequestTracker.trackInBuffer(request);
         request.setStatus(RequestStatus.IN_BUFFER);
         requests.set(ptr.getValue(), request);
         this.ptr.increment();

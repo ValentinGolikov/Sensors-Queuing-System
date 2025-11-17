@@ -2,11 +2,8 @@ package Engine.Devices;
 
 import Engine.Request;
 import Engine.Priority;
-<<<<<<< HEAD
-=======
 import Engine.Threads.ThreadPauser;
 import Engine.Tracking.RequestTracker;
->>>>>>> 148240b (auto_mode_v0.3.1)
 
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -20,11 +17,8 @@ public abstract class Device implements Runnable {
     protected final AtomicBoolean running;
     protected final AtomicInteger processedCount;
     protected final AtomicBoolean isBusy;
-<<<<<<< HEAD
-=======
     protected Request currentRequest;
     protected final Random random;
->>>>>>> 148240b (auto_mode_v0.3.1)
 
     // Базовое время обработки для каждого типа заявок (в миллисекундах)
     protected static final int CRITICAL_PROCESSING_TIME = 2000;
@@ -63,7 +57,9 @@ public abstract class Device implements Runnable {
 
     protected void processRequest(Request request) {
         isBusy.set(true);
+        currentRequest = request;
 
+        RequestTracker.trackInDevice(request, name);
         try {
             System.out.println(name + " обрабатывает заявку: " + request.getId() + " с приоритетом: " + request.getPriority());
 
@@ -131,4 +127,6 @@ public abstract class Device implements Runnable {
     public int getProcessedCount() {
         return processedCount.get();
     }
+
+    public Request getCurrentRequest() { return currentRequest; }
 }

@@ -1,35 +1,48 @@
 package Engine;
 
 import Engine.Threads.RequestsGenerator;
-<<<<<<< HEAD
-=======
 import Engine.Threads.ThreadPauser;
 import Engine.Tracking.ManualModeController;
 import Engine.Tracking.RequestTracker;
 
 import java.util.Scanner;
->>>>>>> 148240b (auto_mode_v0.3.1)
 
 public class Engine {
+    private static ManualModeController manualController;
+    private static boolean manualMode = false;
+
     public static void main(String[] args) {
+        // Проверяем аргументы командной строки
+        if (args.length > 0 && args[0].equals("--manual")) {
+            manualMode = true;
+            System.out.println("=== РЕЖИМ РУЧНОГО УПРАВЛЕНИЯ ===");
+            manualController = new ManualModeController();
+        } else {
+            System.out.println("=== АВТОМАТИЧЕСКИЙ РЕЖИМ ===");
+        }
+
         Buffer buf = new Buffer(10);
         Controller controller = new Controller();
 
-        RequestsGenerator requestsGenerator = new RequestsGenerator(controller);
+        // Создаем компоненты в зависимости от режима
+        RequestsGenerator requestsGenerator;
+        SelectionDispatcher selectionDispatcher;
+
+        if (manualMode) {
+            requestsGenerator = new RequestsGenerator(controller);
+            selectionDispatcher = new SelectionDispatcher(buf, manualController);
+        } else {
+            requestsGenerator = new RequestsGenerator(controller);
+            selectionDispatcher = new SelectionDispatcher(buf);
+        }
+
         ReceptionDispatcher receptionDispatcher = new ReceptionDispatcher(controller, buf);
-        SelectionDispatcher selectionDispatcher = new SelectionDispatcher(buf);
 
         Thread receptionDispatcherThread = new Thread(receptionDispatcher, "receptionDispatcherThread");
         Thread controllerThread = new Thread(controller, "controllerThread");
         Thread requestsGeneratorThread = new Thread(requestsGenerator, "requestsGeneratorThread");
         Thread selectionDispatcherThread = new Thread(selectionDispatcher, "selectionDispatcherThread");
 
-<<<<<<< HEAD
-        controllerThread.start();
-        receptionDispatcherThread.start();
-        requestsGeneratorThread.start();
-        selectionDispatcherThread.start();
-=======
         if (manualMode) {
             // В РУЧНОМ РЕЖИМЕ: сначала показываем инструкции, потом запускаем потоки
             try {
@@ -133,15 +146,51 @@ public class Engine {
     private static void runAutomaticForTime(long milliseconds, Buffer buffer, SelectionDispatcher selectionDispatcher) {
         System.out.println("\n⏱️  АВТОМАТИЧЕСКИЙ РЕЖИМ на " + (milliseconds / 1000) + " секунд...");
         manualController.setPaused(false);
->>>>>>> 148240b (auto_mode_v0.3.1)
 
         try {
-            controllerThread.join();
-            receptionDispatcherThread.join();
-            requestsGeneratorThread.join();
-            selectionDispatcherThread.join();
+            // Показываем состояние в начале
+            manualController.displaySystemState(buffer, selectionDispatcher);
+
+            // Ждем указанное время, периодически показывая состояние
+            long startTime = System.currentTimeMillis();
+            while (System.currentTimeMillis() - startTime < milliseconds) {
+                Thread.sleep(2000); // Показываем состояние каждые 2 секунды
+                manualController.displaySystemState(buffer, selectionDispatcher);
+
+                // Показываем оставшееся время
+                long remaining = (milliseconds - (System.currentTimeMillis() - startTime)) / 1000;
+                System.out.printf("⏰ Оставшееся время: %d сек\n", remaining);
+            }
+
         } catch (InterruptedException e) {
-            System.err.println(e);
+            Thread.currentThread().interrupt();
+        } finally {
+            manualController.setPaused(true);
+            System.out.println("🔄 ВОЗВРАТ В РУЧНОЙ РЕЖИМ");
         }
+    }
+
+    private static void stopAllComponents(RequestsGenerator requestsGenerator, SelectionDispatcher selectionDispatcher,
+                                          Controller controller, ReceptionDispatcher receptionDispatcher) {
+        System.out.println("\n🛑 ОСТАНОВКА СИСТЕМЫ...");
+
+        // Останавливаем компоненты в правильном порядке
+        if (requestsGenerator != null) {
+            requestsGenerator.stop();
+        }
+        if (selectionDispatcher != null) {
+            selectionDispatcher.stop();
+        }
+        if (controller != null) {
+            controller.stop();
+        }
+        if (receptionDispatcher != null) {
+            receptionDispatcher.stop();
+        }
+
+        // Финальная статистика
+        System.out.println("\n📊 ФИНАЛЬНАЯ СТАТИСТИКА:");
+        System.out.println("Всего обработано заявок: " + RequestTracker.getTotalProcessed());
+        System.out.println("=== СИСТЕМА ЗАВЕРШИЛА РАБОТУ ===");
     }
 }

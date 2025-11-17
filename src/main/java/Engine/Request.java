@@ -1,5 +1,7 @@
 package Engine;
 
+import Engine.Tracking.RequestTracker;
+
 public class Request {
     private static int nextId = 1;
     private final int id;
@@ -13,6 +15,7 @@ public class Request {
         this.generationTime = new DateTime();
         this.priority = priority;
         this.status = RequestStatus.NEW;
+        RequestTracker.trackCreated(this);
     }
 
     public int getId() {
