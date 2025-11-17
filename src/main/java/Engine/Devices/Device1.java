@@ -26,8 +26,8 @@ public class Device1 extends Engine.Devices.Device {
             // Сохранение в базу данных
             saveToDatabase(request);
 
-            System.out.println("Device1: sleeping for " + (long) Math.exp((double) getProcessedCount() /10));
-            Thread.sleep((long) Math.exp((double) getProcessedCount() /10));
+            System.out.println("Device1: sleeping for " + (long) Math.exp((double) getProcessedCount()));
+            Thread.sleep((long) Math.exp((double) getProcessedCount()));
         } catch (InterruptedException e) {
             System.err.println(e);
         }
