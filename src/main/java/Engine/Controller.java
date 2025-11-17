@@ -1,6 +1,7 @@
 package Engine;
 
 import Engine.Threads.RequestsGenerator;
+import Engine.Threads.ThreadPauser;
 
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -33,6 +34,7 @@ public class Controller implements Runnable {
             }
             else {
                 try {
+                    ThreadPauser.checkPause();
                     if (!dataPackQueue.isEmpty()) {
                         DataPack dataPack = dataPackQueue.take();
 

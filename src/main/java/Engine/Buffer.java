@@ -11,10 +11,10 @@ public class Buffer {
     private boolean hasSpace(){
         for (Request request : requests) {
             if (request == null) {
-                return false;
+                return true;
             }
         }
-        return true;
+        return false;
     }
 
     public Buffer(int size){
@@ -31,9 +31,8 @@ public class Buffer {
     }
 
     public RequestStatus addRequest(Request request) {
-        if (hasSpace()) {
-            System.out.println("====================REJECTED==================== " + request.getPriority());
-            return RequestStatus.REJECTED;
+        if (!hasSpace()) {
+            System.out.println("===================INIT REJECTION=================== " + requests.get(ptr.getValue()).getPriority() + " " + requests.get(ptr.getValue()).getId());
         }
         request.setStatus(RequestStatus.IN_BUFFER);
         requests.set(ptr.getValue(), request);

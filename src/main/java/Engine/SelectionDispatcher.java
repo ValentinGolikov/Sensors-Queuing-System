@@ -4,6 +4,11 @@ import Engine.Devices.Device;
 import Engine.Devices.Device1;
 import Engine.Devices.Device2;
 import Engine.Devices.Device3;
+<<<<<<< HEAD
+=======
+import Engine.Threads.ThreadPauser;
+import Engine.Tracking.ManualModeController;
+>>>>>>> 148240b (auto_mode_v0.3.1)
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -44,6 +49,10 @@ public class SelectionDispatcher implements Runnable {
 
         while (running.get()) {
             try {
+<<<<<<< HEAD
+=======
+                ThreadPauser.checkPause();
+>>>>>>> 148240b (auto_mode_v0.3.1)
                 Request request = buffer.getNextRequest();
                 if (request != null) {
                     dispatchRequest(request);

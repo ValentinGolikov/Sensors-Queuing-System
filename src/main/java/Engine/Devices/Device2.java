@@ -3,6 +3,7 @@ package Engine.Devices;
 import Engine.NotificationSystem;
 import Engine.Request;
 import Engine.Priority;
+import Engine.Threads.ThreadPauser;
 
 public class Device2 extends Engine.Devices.Device {
 
@@ -12,14 +13,22 @@ public class Device2 extends Engine.Devices.Device {
 
     @Override
     protected void handleRequest(Request request) {
-        // Формирование отчета-предупреждения
-        System.out.println("Device2: Формирование отчета-ПРЕДУПРЕЖДЕНИЯ для заявки " + request.getId());
+        try {
+            ThreadPauser.checkPause();
 
-        // Отправка уведомления инженеру
-        NotificationSystem.sendNotification(request, getName());
+            // Формирование отчета-предупреждения
+            System.out.println("Device2: Формирование отчета-ПРЕДУПРЕЖДЕНИЯ для заявки " + request.getId());
 
-        // Сохранение в базу данных
-        saveToDatabase(request);
+            // Отправка уведомления инженеру
+            NotificationSystem.sendNotification(request, getName());
+
+            // Сохранение в базу данных
+            saveToDatabase(request);
+            System.out.println("Device2: sleeping for " + (long) Math.exp((double) getProcessedCount() /10));
+            Thread.sleep((long) Math.exp((double) getProcessedCount() /10));
+        } catch (InterruptedException e) {
+            System.err.println(e);
+        }
     }
 
     @Override

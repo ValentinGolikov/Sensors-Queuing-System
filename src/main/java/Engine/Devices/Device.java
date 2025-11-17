@@ -2,11 +2,17 @@ package Engine.Devices;
 
 import Engine.Request;
 import Engine.Priority;
+<<<<<<< HEAD
+=======
+import Engine.Threads.ThreadPauser;
+import Engine.Tracking.RequestTracker;
+>>>>>>> 148240b (auto_mode_v0.3.1)
 
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.Random;
 
 public abstract class Device implements Runnable {
     protected final String name;
@@ -14,11 +20,19 @@ public abstract class Device implements Runnable {
     protected final AtomicBoolean running;
     protected final AtomicInteger processedCount;
     protected final AtomicBoolean isBusy;
+<<<<<<< HEAD
+=======
+    protected Request currentRequest;
+    protected final Random random;
+>>>>>>> 148240b (auto_mode_v0.3.1)
 
-    // Время обработки для каждого типа заявок (в миллисекундах)
+    // Базовое время обработки для каждого типа заявок (в миллисекундах)
     protected static final int CRITICAL_PROCESSING_TIME = 2000;
     protected static final int WARNING_PROCESSING_TIME = 1500;
     protected static final int METRICS_PROCESSING_TIME = 1000;
+
+    // Параметр лямбда для экспоненциального распределения
+    protected static final double LAMBDA = 0.001; // 0.001 соответствует среднему времени 1000 мс
 
     public Device(String name) {
         this.name = name;
@@ -26,6 +40,7 @@ public abstract class Device implements Runnable {
         this.running = new AtomicBoolean(true);
         this.processedCount = new AtomicInteger(0);
         this.isBusy = new AtomicBoolean(false);
+        this.random = new Random();
     }
 
     @Override
@@ -34,6 +49,7 @@ public abstract class Device implements Runnable {
 
         while (running.get() || !processingQueue.isEmpty()) {
             try {
+                ThreadPauser.checkPause();
                 Request request = processingQueue.take();
                 processRequest(request);
             } catch (InterruptedException e) {
@@ -51,21 +67,31 @@ public abstract class Device implements Runnable {
         try {
             System.out.println(name + " обрабатывает заявку: " + request.getId() + " с приоритетом: " + request.getPriority());
 
-            // Имитация времени обработки в зависимости от приоритета
-            int processingTime = getProcessingTime(request.getPriority());
-            Thread.sleep(processingTime);
-
             // Логика обработки заявки (формирование отчета, уведомление и т.д.)
             handleRequest(request);
 
             processedCount.incrementAndGet();
             System.out.println(name + " завершил обработку заявки: " + request.getId());
+            RequestTracker.trackProcessed(request);
 
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
         } finally {
             isBusy.set(false);
         }
+    }
+
+    /**
+     * Генерирует время обработки по экспоненциальному закону
+     * @param baseTime базовое время обработки для данного приоритета
+     * @return время обработки с экспоненциальным распределением
+     */
+    protected int getExponentialProcessingTime(int baseTime) {
+        // Генерируем случайную величину с экспоненциальным распределением
+        double exponentialValue = -Math.log(1 - random.nextDouble()) / LAMBDA;
+
+        // Масштабируем базовое время с учетом экспоненциального значения
+        // Ограничиваем максимальное время разумным значением (10 * baseTime)
+        int processingTime = (int) (baseTime * (1 + exponentialValue / 1000));
+        return Math.min(processingTime, baseTime * 10);
     }
 
     protected int getProcessingTime(Priority priority) {

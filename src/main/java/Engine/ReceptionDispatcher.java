@@ -1,6 +1,7 @@
 package Engine;
 
 import Engine.Threads.RequestsGenerator;
+import Engine.Threads.ThreadPauser;
 
 public class ReceptionDispatcher implements Runnable {
     private final Controller controller;
@@ -24,14 +25,11 @@ public class ReceptionDispatcher implements Runnable {
             }
             else {
                 try {
+                    ThreadPauser.checkPause();
                     Request request = controller.getRequestsQueue().take();
 
-                    RequestStatus requestStatus = buffer.addRequest(request);
-                    if (requestStatus.equals(RequestStatus.REJECTED)) {
-                        System.out.println("Request with ID " + request.getId() + " REJECTED");
-                    } else {
-                        System.out.println("Request with ID " + request.getId() + " IN_BUFFER");
-                    }
+
+                    System.out.println("Request with ID " + request.getId() + " " + buffer.addRequest(request));
 
                 } catch (InterruptedException e) {
                     System.out.println("ReceptionDispatcher interrupted");
