@@ -26,7 +26,7 @@ public class MetricsGenerator implements Runnable {
         while (running.get()) {
             try {
                 ThreadPauser.checkPause();
-                Thread.sleep(300);
+                Thread.sleep(1000);
 
                 controller.submitDataPack(DataPack.createNormalScenario(
                         DataPack.getRandomElement(TRAINS),

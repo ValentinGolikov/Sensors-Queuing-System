@@ -42,15 +42,23 @@ public class Buffer {
         if (!hasSpace()) {
             System.out.println("===================INIT REJECTION=================== " + requests.get(ptr.getValue()).getPriority() + " " + requests.get(ptr.getValue()).getId());
         }
-        RequestTracker.trackInBuffer(request);
-        request.setStatus(RequestStatus.IN_BUFFER);
-        requests.set(ptr.getValue(), request);
-        this.ptr.increment();
+        else {
+            if (requests.get(ptr.getValue()) == null) {
+                RequestTracker.trackInBuffer(request);
+                request.setStatus(RequestStatus.IN_BUFFER);
+                requests.set(ptr.getValue(), request);
+                this.ptr.increment();
+            } else {
+                this.ptr.increment();
+            }
+        }
         return RequestStatus.IN_BUFFER;
+
     }
 
     public Request getNextRequest() {
-        LimitedInteger pointer = new LimitedInteger(this.size - 1, this.ptr.getValue());
+        int beginPoint = this.ptr.getValue();
+        LimitedInteger pointer = new LimitedInteger(this.size - 1, beginPoint);
         while (requests.get(pointer.getValue()) == null) {
             pointer.increment();
         }
@@ -61,7 +69,7 @@ public class Buffer {
         pointer.increment();
         Request tempReq;
 
-        while(pointer.getValue() != this.ptr.getValue()) {
+        while(pointer.getValue() != beginPoint) {
             tempReq = requests.get(pointer.getValue());
             if (tempReq != null) {
                 if (tempReq.getPriority().ordinal() < priority.ordinal()) {
@@ -79,7 +87,6 @@ public class Buffer {
         pointer.increment();
         }
         requests.set(current_pointer, null);
-        this.ptr.increment();
         req.setStatus(RequestStatus.PROCESSED);
         return req;
     }

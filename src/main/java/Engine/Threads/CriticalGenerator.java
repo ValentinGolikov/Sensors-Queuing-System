@@ -26,7 +26,7 @@ public class CriticalGenerator implements Runnable {
         while (running.get()) {
             try {
                 ThreadPauser.checkPause();
-                Thread.sleep(5000);
+                Thread.sleep(10000);
 
                 controller.submitDataPack(DataPack.createCriticalScenario(
                         DataPack.getRandomElement(TRAINS),
