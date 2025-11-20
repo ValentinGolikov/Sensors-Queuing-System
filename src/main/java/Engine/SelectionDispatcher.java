@@ -65,11 +65,6 @@ public class SelectionDispatcher implements Runnable {
                 Request request = buffer.getNextRequest();
                 if (request != null) {
                     dispatchRequest(request);
-
-                    // Показываем состояние после обработки (только в ручном режиме)
-                    if (manualController != null) {
-                        manualController.displaySystemState(buffer, this);
-                    }
                 }
             } catch (InterruptedException e) {
                 System.err.println("SelectionDispatcher прерван: " + e.getMessage());

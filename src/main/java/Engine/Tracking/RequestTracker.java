@@ -15,8 +15,7 @@ public class RequestTracker {
         private final int id;
         private final Priority priority;
         private final LocalDateTime creationTime;
-        private LocalDateTime startProcessingTime;
-        private LocalDateTime endProcessingTime;
+        private LocalDateTime processedTime;
         private String status; // "CREATED", "IN_BUFFER", "IN_DEVICE", "PROCESSED"
         private String currentDevice;
 
@@ -31,19 +30,9 @@ public class RequestTracker {
             return Duration.between(creationTime, LocalDateTime.now());
         }
 
-        public Duration getProcessingTime() {
-            if (startProcessingTime != null && endProcessingTime != null) {
-                return Duration.between(startProcessingTime, endProcessingTime);
-            } else if (startProcessingTime != null) {
-                return Duration.between(startProcessingTime, LocalDateTime.now());
-            }
-            return Duration.ZERO;
-        }
-
         // Getters and setters
         public void setStatus(String status) { this.status = status; }
-        public void setStartProcessingTime(LocalDateTime time) { this.startProcessingTime = time; }
-        public void setEndProcessingTime(LocalDateTime time) { this.endProcessingTime = time; }
+        public void setProcessedTime(LocalDateTime time) { this.processedTime = time; }
         public void setCurrentDevice(String device) { this.currentDevice = device; }
 
         public int getId() { return id; }
@@ -51,6 +40,9 @@ public class RequestTracker {
         public String getStatus() { return status; }
         public String getCurrentDevice() { return currentDevice; }
         public LocalDateTime getCreationTime() { return creationTime; }
+        public LocalDateTime getProcessedTime() {
+            return processedTime;
+        }
     }
 
     public static void trackCreated(Request request) {
@@ -69,7 +61,6 @@ public class RequestTracker {
         if (info != null) {
             info.setStatus("IN_DEVICE");
             info.setCurrentDevice(deviceName);
-            info.setStartProcessingTime(LocalDateTime.now());
         }
     }
 
@@ -77,7 +68,7 @@ public class RequestTracker {
         RequestInfo info = activeRequests.get(request.getId());
         if (info != null) {
             info.setStatus("PROCESSED");
-            info.setEndProcessingTime(LocalDateTime.now());
+            info.setProcessedTime(LocalDateTime.now());
             totalProcessed.incrementAndGet();
         }
     }

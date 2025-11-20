@@ -1,12 +1,17 @@
 package Engine;
 
+import Engine.Threads.RequestsGenerator;
 import Engine.Tracking.RequestTracker;
 
 import javax.swing.*;
 import java.util.ArrayList;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class Buffer {
     private final int size;
+    private final AtomicInteger criticalRejected = new AtomicInteger(0);
+    private final AtomicInteger warningRejected = new AtomicInteger(0);
+    private final AtomicInteger metricsRejected = new AtomicInteger(0);
     private final LimitedInteger ptr;
     private final ArrayList<Request> requests;
 
@@ -28,6 +33,10 @@ public class Buffer {
         }
     }
 
+    public int getSize() {
+        return size;
+    }
+
     public int getCurrentSize() {
         int count = 0;
         for (Request request: requests){
@@ -38,9 +47,39 @@ public class Buffer {
         return count;
     }
 
+    public int getCriticalRejected() {
+        return criticalRejected.get();
+    }
+
+    public int getWarningRejected() {
+        return warningRejected.get();
+    }
+
+    public int getMetricsRejected() {
+        return metricsRejected.get();
+    }
+
+    public LimitedInteger getPtr() {
+        return ptr;
+    }
+
     public RequestStatus addRequest(Request request) {
         if (!hasSpace()) {
-            System.out.println("===================INIT REJECTION=================== " + requests.get(ptr.getValue()).getPriority() + " " + requests.get(ptr.getValue()).getId());
+            System.out.println("===================INIT REJECTION=================== " +
+                    requests.get(ptr.getValue()).getPriority() + " " + requests.get(ptr.getValue()).getId());
+            requests.get(ptr.getValue()).setStatus(RequestStatus.REJECTED);
+
+            Priority priority = requests.get(ptr.getValue()).getPriority();
+            switch (priority) {
+                case Priority.CRITICAL -> criticalRejected.incrementAndGet();
+                case Priority.WARNING -> warningRejected.incrementAndGet();
+                case Priority.METRICS -> metricsRejected.incrementAndGet();
+            }
+
+            RequestTracker.trackInBuffer(request);
+            request.setStatus(RequestStatus.IN_BUFFER);
+            requests.set(ptr.getValue(), request);
+            this.ptr.increment();
         }
         else {
             if (requests.get(ptr.getValue()) == null) {
@@ -91,8 +130,7 @@ public class Buffer {
         return req;
     }
 
-    public void removeRequest() {
-        requests.set(this.ptr.getValue(), null);
-        this.ptr.increment();
+    public Request getRequest(int i) {
+        return requests.get(i);
     }
 }

@@ -12,11 +12,13 @@ public class MetricsGenerator implements Runnable {
     private final AtomicBoolean running;
     private final Controller controller;
     private final AtomicInteger totalGenerated;
+    private final AtomicInteger metricsGenerated;
 
-    public MetricsGenerator (AtomicBoolean running, Controller controller, AtomicInteger totalGenerated) {
+    public MetricsGenerator (AtomicBoolean running, Controller controller, AtomicInteger totalGenerated, AtomicInteger metricsGenerated) {
         this.running = running;
         this.controller = controller;
         this.totalGenerated = totalGenerated;
+        this.metricsGenerated = metricsGenerated;
     }
 
     @Override
@@ -35,6 +37,7 @@ public class MetricsGenerator implements Runnable {
                 ));
 
                 totalGenerated.incrementAndGet();
+                metricsGenerated.incrementAndGet();
 
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();

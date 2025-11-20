@@ -8,6 +8,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class RequestsGenerator implements Runnable {
     private final AtomicInteger totalGenerated = new AtomicInteger(0);
+    private final AtomicInteger criticalGenerated = new AtomicInteger(0);
+    private final AtomicInteger metricsGenerated = new AtomicInteger(0);
+    private final AtomicInteger warningGenerated = new AtomicInteger(0);
     private static final AtomicBoolean running = new AtomicBoolean(true);
     private final Controller controller;
     private static boolean stopFlag = false;
@@ -24,9 +27,9 @@ public class RequestsGenerator implements Runnable {
     public void run() {
         System.out.println("=== ЗАПУСК ГЕНЕРАТОРА ЗАЯВОК ===");
 
-        criticalThread = new Thread(new CriticalGenerator(running, controller, totalGenerated), "Critical-Generator");
-        warningThread = new Thread(new WarningGenerator(running, controller, totalGenerated), "Warning-Generator");
-        metricsThread = new Thread(new MetricsGenerator(running, controller, totalGenerated), "Metrics-Generator");
+        criticalThread = new Thread(new CriticalGenerator(running, controller, totalGenerated, criticalGenerated), "Critical-Generator");
+        warningThread = new Thread(new WarningGenerator(running, controller, totalGenerated, warningGenerated), "Warning-Generator");
+        metricsThread = new Thread(new MetricsGenerator(running, controller, totalGenerated, metricsGenerated), "Metrics-Generator");
 
         metricsThread.start();
         warningThread.start();
@@ -45,6 +48,18 @@ public class RequestsGenerator implements Runnable {
             System.err.println("Генератор заявок прерван: " + e.getMessage());
             Thread.currentThread().interrupt();
         }
+    }
+
+    public int getCriticalGenerated() {
+        return criticalGenerated.get();
+    }
+
+    public int getWarningGenerated() {
+        return warningGenerated.get();
+    }
+
+    public int getMetricsGenerated() {
+        return metricsGenerated.get();
     }
 
     public void stop() {

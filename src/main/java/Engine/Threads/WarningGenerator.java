@@ -12,11 +12,13 @@ public class WarningGenerator implements Runnable {
     private final AtomicBoolean running;
     private final Controller controller;
     private final AtomicInteger totalGenerated;
+    private final AtomicInteger warningGenerated;
 
-    public WarningGenerator (AtomicBoolean running, Controller controller, AtomicInteger totalGenerated) {
+    public WarningGenerator (AtomicBoolean running, Controller controller, AtomicInteger totalGenerated, AtomicInteger warningGenerated) {
         this.running = running;
         this.controller = controller;
         this.totalGenerated = totalGenerated;
+        this.warningGenerated = warningGenerated;
     }
 
     @Override
@@ -35,6 +37,7 @@ public class WarningGenerator implements Runnable {
                 ));
 
                 totalGenerated.incrementAndGet();
+                warningGenerated.incrementAndGet();
 
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();

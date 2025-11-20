@@ -92,23 +92,20 @@ public class Engine {
             String input = scanner.nextLine().trim();
 
             switch (input) {
-                case "s":
-                case "S":
+                case "":
                     if (systemStarted) {
                         ThreadPauser.resumeAllThreads();
                         Thread.sleep(100);
                         ThreadPauser.pauseAllThreads();
-                        manualController.displaySystemState(buffer, selectionDispatcher);
-                        System.out.print("\nВведите Enter чтобы продолжить: ");
-                        input = scanner.nextLine().trim();
+                        manualController.displaySystemState(buffer, selectionDispatcher, requestsGenerator);
                     } else {
-                        System.out.println("❌ Сначала запустите систему командой 'start'");
+                        System.out.println("Сначала запустите систему командой 'start'");
                     }
                     break;
 
                 case "start":
                     if (!systemStarted) {
-                        System.out.println("🚀 ЗАПУСК ВСЕХ ПОТОКОВ...");
+                        System.out.println("ЗАПУСК ВСЕХ ПОТОКОВ...");
                         controllerThread.start();
                         receptionDispatcherThread.start();
                         requestsGeneratorThread.start();
@@ -116,9 +113,9 @@ public class Engine {
                         systemStarted = true;
 
                         ThreadPauser.pauseAllThreads();
-                        manualController.displaySystemState(buffer, selectionDispatcher);
+                        manualController.displaySystemState(buffer, selectionDispatcher, requestsGenerator);
                     } else {
-                        System.out.println("✅ Система уже запущена");
+                        System.out.println("Система уже запущена");
                     }
                     break;
 
@@ -143,36 +140,9 @@ public class Engine {
         scanner.close();
     }
 
-    private static void runAutomaticForTime(long milliseconds, Buffer buffer, SelectionDispatcher selectionDispatcher) {
-        System.out.println("\n⏱️  АВТОМАТИЧЕСКИЙ РЕЖИМ на " + (milliseconds / 1000) + " секунд...");
-        manualController.setPaused(false);
-
-        try {
-            // Показываем состояние в начале
-            manualController.displaySystemState(buffer, selectionDispatcher);
-
-            // Ждем указанное время, периодически показывая состояние
-            long startTime = System.currentTimeMillis();
-            while (System.currentTimeMillis() - startTime < milliseconds) {
-                Thread.sleep(2000); // Показываем состояние каждые 2 секунды
-                manualController.displaySystemState(buffer, selectionDispatcher);
-
-                // Показываем оставшееся время
-                long remaining = (milliseconds - (System.currentTimeMillis() - startTime)) / 1000;
-                System.out.printf("⏰ Оставшееся время: %d сек\n", remaining);
-            }
-
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        } finally {
-            manualController.setPaused(true);
-            System.out.println("🔄 ВОЗВРАТ В РУЧНОЙ РЕЖИМ");
-        }
-    }
-
     private static void stopAllComponents(RequestsGenerator requestsGenerator, SelectionDispatcher selectionDispatcher,
                                           Controller controller, ReceptionDispatcher receptionDispatcher) {
-        System.out.println("\n🛑 ОСТАНОВКА СИСТЕМЫ...");
+        System.out.println("\nОСТАНОВКА СИСТЕМЫ...");
 
         // Останавливаем компоненты в правильном порядке
         if (requestsGenerator != null) {

@@ -12,11 +12,13 @@ public class CriticalGenerator implements Runnable {
     private final AtomicBoolean running;
     private final Controller controller;
     private final AtomicInteger totalGenerated;
+    private final AtomicInteger criticalGenerated;
 
-    public CriticalGenerator (AtomicBoolean running, Controller controller, AtomicInteger totalGenerated) {
+    public CriticalGenerator (AtomicBoolean running, Controller controller, AtomicInteger totalGenerated, AtomicInteger criticalGenerated) {
         this.running = running;
         this.controller = controller;
         this.totalGenerated = totalGenerated;
+        this.criticalGenerated = criticalGenerated;
     }
 
     @Override
@@ -35,6 +37,7 @@ public class CriticalGenerator implements Runnable {
                 ));
 
                 totalGenerated.incrementAndGet();
+                criticalGenerated.incrementAndGet();
 
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
