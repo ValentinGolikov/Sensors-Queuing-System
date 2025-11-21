@@ -62,7 +62,7 @@ public class SelectionDispatcher implements Runnable {
         while (running.get()) {
             try {
                 ThreadPauser.checkPause();
-                Request request = buffer.getNextRequest();
+                Request request = buffer.getNextRequest(running);
                 if (request != null) {
                     dispatchRequest(request);
                 }
@@ -149,6 +149,14 @@ public class SelectionDispatcher implements Runnable {
         device1.stop();
         device2.stop();
         device3.stop();
+        try {
+            device1Thread.join(1000);
+            device2Thread.join(1000);
+            device3Thread.join(1000);
+        }
+        catch (InterruptedException e) {
+            System.err.println(e);
+        }
     }
 
 }

@@ -2,7 +2,6 @@ package Engine.Tracking;
 
 import Engine.Request;
 import Engine.Priority;
-import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -16,6 +15,7 @@ public class RequestTracker {
         private final Priority priority;
         private final LocalDateTime creationTime;
         private LocalDateTime processedTime;
+        private long lifeTime;
         private String status; // "CREATED", "IN_BUFFER", "IN_DEVICE", "PROCESSED"
         private String currentDevice;
 
@@ -26,8 +26,11 @@ public class RequestTracker {
             this.status = "CREATED";
         }
 
-        public Duration getLifeTime() {
-            return Duration.between(creationTime, LocalDateTime.now());
+        public void setLifeTime(long lifeTime) {
+            this.lifeTime = lifeTime;
+        }
+        public long getLifeTime() {
+            return this.lifeTime;
         }
 
         // Getters and setters

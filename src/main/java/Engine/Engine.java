@@ -122,6 +122,7 @@ public class Engine {
                 case "q":
                 case "Q":
                     running = false;
+                    ThreadPauser.resumeAllThreads();
                     System.out.println("Завершение работы...");
                     break;
 

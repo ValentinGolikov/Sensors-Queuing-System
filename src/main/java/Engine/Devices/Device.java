@@ -7,6 +7,7 @@ import Engine.Tracking.RequestTracker;
 
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.Random;
@@ -20,10 +21,7 @@ public abstract class Device implements Runnable {
     protected Request currentRequest;
     protected final Random random;
 
-    // Базовое время обработки для каждого типа заявок (в миллисекундах)
-    protected static final int CRITICAL_PROCESSING_TIME = 2000;
-    protected static final int WARNING_PROCESSING_TIME = 1500;
-    protected static final int METRICS_PROCESSING_TIME = 1000;
+    protected static final long TIMEOUT = 10000;
 
     // Параметр лямбда для экспоненциального распределения
     protected static final double LAMBDA = 0.001; // 0.001 соответствует среднему времени 1000 мс
@@ -44,8 +42,8 @@ public abstract class Device implements Runnable {
         while (running.get() || !processingQueue.isEmpty()) {
             try {
                 ThreadPauser.checkPause();
-                Request request = processingQueue.take();
-                processRequest(request);
+                Request request = processingQueue.poll(TIMEOUT, TimeUnit.MILLISECONDS);
+                if (request != null) processRequest(request);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 break;
@@ -72,30 +70,6 @@ public abstract class Device implements Runnable {
 
         } finally {
             isBusy.set(false);
-        }
-    }
-
-    /**
-     * Генерирует время обработки по экспоненциальному закону
-     * @param baseTime базовое время обработки для данного приоритета
-     * @return время обработки с экспоненциальным распределением
-     */
-    protected int getExponentialProcessingTime(int baseTime) {
-        // Генерируем случайную величину с экспоненциальным распределением
-        double exponentialValue = -Math.log(1 - random.nextDouble()) / LAMBDA;
-
-        // Масштабируем базовое время с учетом экспоненциального значения
-        // Ограничиваем максимальное время разумным значением (10 * baseTime)
-        int processingTime = (int) (baseTime * (1 + exponentialValue / 1000));
-        return Math.min(processingTime, baseTime * 10);
-    }
-
-    protected int getProcessingTime(Priority priority) {
-        switch (priority) {
-            case CRITICAL: return CRITICAL_PROCESSING_TIME;
-            case WARNING: return WARNING_PROCESSING_TIME;
-            case METRICS: return METRICS_PROCESSING_TIME;
-            default: return 1000;
         }
     }
 

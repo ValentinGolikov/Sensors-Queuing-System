@@ -2,6 +2,8 @@ package Engine;
 
 import Engine.Tracking.RequestTracker;
 
+import java.time.Duration;
+
 public class Request {
     private static int nextId = 1;
     private final int id;
@@ -18,6 +20,12 @@ public class Request {
         RequestTracker.trackCreated(this);
     }
 
+    public void setStatus(RequestStatus status) {
+        this.status = status;
+    }
+    public void setData(String data) {
+        this.data = data;
+    }
     public int getId() {
         return id;
     }
@@ -27,17 +35,11 @@ public class Request {
     public DateTime getGenerationTime() {
         return generationTime;
     }
-    public void setStatus(RequestStatus status) {
-        this.status = status;
+    public String getData() {
+        return data;
     }
     public RequestStatus getStatus() {
         return status;
-    }
-    public void setData(String data) {
-        this.data = data;
-    }
-    public String getData() {
-        return data;
     }
 
 }

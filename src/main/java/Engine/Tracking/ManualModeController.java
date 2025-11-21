@@ -6,6 +6,7 @@ import Engine.Threads.CriticalGenerator;
 import Engine.Threads.RequestsGenerator;
 
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
@@ -13,25 +14,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 public class ManualModeController {
     private final AtomicBoolean paused = new AtomicBoolean(true);
-    private final AtomicBoolean stepExecuted = new AtomicBoolean(false);
-    private final Scanner scanner = new Scanner(System.in);
-
-    public void setPaused(boolean paused) {
-        this.paused.set(paused);
-        if (!paused) {
-            System.out.println("▶️  Система продолжает работу...");
-        } else {
-            System.out.println("⏸️  Система приостановлена");
-        }
-    }
 
     public void displaySystemState(Buffer buffer, SelectionDispatcher dispatcher, RequestsGenerator requestsGenerator) {
         System.out.println("\n" + "=".repeat(100));
-        System.out.println("📊 СИСТЕМНЫЙ РАЗРЕЗ - Состояние системы");
+        System.out.println("Состояние системы");
         System.out.println("=".repeat(100));
-
-        // Статистика системы
-        displaySystemStatistics(buffer, dispatcher);
 
         // Таблица активных заявок
         displayRequestsTable();
@@ -48,20 +35,6 @@ public class ManualModeController {
         System.out.println("=".repeat(100));
     }
 
-    private void displaySystemStatistics(Buffer buffer, SelectionDispatcher dispatcher) {
-        System.out.println("📈 СТАТИСТИКА СИСТЕМЫ:");
-        System.out.printf("   • Заявок в буфере: %d\n", buffer.getCurrentSize());
-        System.out.printf("   • Всего обработано: %d\n", RequestTracker.getTotalProcessed());
-        System.out.printf("   • Активных заявок: %d\n", RequestTracker.getActiveRequests().size());
-
-        Map<Integer, RequestTracker.RequestInfo> requests = RequestTracker.getActiveRequests();
-        long avgLifeTime = (long) requests.values().stream()
-                .mapToLong(info -> info.getLifeTime().toMillis())
-                .average()
-                .orElse(0);
-        System.out.printf("   • Среднее время жизни: %.2f сек\n", avgLifeTime / 1000.0);
-    }
-
     private void displayRequestsTable() {
         System.out.println("\n╔══════════════════════════════════════════════════════════════════════════════════╗");
         System.out.println("║                                ТАБЛИЦА ЗАЯВОК                                    ║");
@@ -74,7 +47,8 @@ public class ManualModeController {
             System.out.println("║                            Нет активных заявок                                   ║");
         } else {
             requests.values().forEach(info -> {
-                String lifeTime = String.format("%.2f", calculateTimeInSystem(info) / 1000.0);
+                calculateTimeInSystem(info);
+                String lifeTime = String.format("%.2f", info.getLifeTime() / 1000.0);
                 String device = info.getCurrentDevice() != null ? info.getCurrentDevice() : "—";
                 System.out.printf("║ %-10s │ %-9s │ %-10s │ %-21s │ %-18s ║%n",
                         info.getId(),
@@ -180,11 +154,13 @@ public class ManualModeController {
         System.out.println("╚═══════════════════════════════════╝");
     }
 
-    private long calculateTimeInSystem(RequestTracker.RequestInfo info) {
+    public void calculateTimeInSystem(RequestTracker.RequestInfo info) {
         if (info.getProcessedTime() != null && info.getCreationTime() != null) {
-            return Duration.between(info.getProcessedTime(), info.getCreationTime()).toMillis() -
-                    PauseTimeManager.getPauseDuration();
+            info.setLifeTime(Duration.between(info.getCreationTime(), info.getProcessedTime()).toMillis() -
+                    PauseTimeManager.getPauseDuration());
         }
-        return Duration.ZERO.toMillis();
+        else {
+            info.setLifeTime(Duration.ZERO.toMillis());
+        }
     }
 }

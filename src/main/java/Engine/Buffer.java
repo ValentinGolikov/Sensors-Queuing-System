@@ -5,6 +5,7 @@ import Engine.Tracking.RequestTracker;
 
 import javax.swing.*;
 import java.util.ArrayList;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class Buffer {
@@ -95,12 +96,13 @@ public class Buffer {
 
     }
 
-    public Request getNextRequest() {
+    public Request getNextRequest(AtomicBoolean running) {
         int beginPoint = this.ptr.getValue();
         LimitedInteger pointer = new LimitedInteger(this.size - 1, beginPoint);
-        while (requests.get(pointer.getValue()) == null) {
+        while (running.get() && (requests.get(pointer.getValue()) == null)) {
             pointer.increment();
         }
+        if (!running.get()) { return null; }
         Request req = requests.get(pointer.getValue());
         Priority priority = req.getPriority();
 
