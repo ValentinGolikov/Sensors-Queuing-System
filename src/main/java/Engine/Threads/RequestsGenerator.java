@@ -62,6 +62,10 @@ public class RequestsGenerator implements Runnable {
         return metricsGenerated.get();
     }
 
+    public int getTotalGenerated() {
+        return totalGenerated.get();
+    }
+
     public void stop() {
         running.set(false);
         System.out.println("\n=== ОСТАНОВКА ГЕНЕРАЦИИ ===");

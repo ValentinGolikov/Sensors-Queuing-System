@@ -13,6 +13,7 @@ public class Buffer {
     private final AtomicInteger criticalRejected = new AtomicInteger(0);
     private final AtomicInteger warningRejected = new AtomicInteger(0);
     private final AtomicInteger metricsRejected = new AtomicInteger(0);
+    private final AtomicInteger totalRejected = new AtomicInteger(0);
     private final LimitedInteger ptr;
     private final ArrayList<Request> requests;
 
@@ -60,6 +61,10 @@ public class Buffer {
         return metricsRejected.get();
     }
 
+    public int getTotalRejected() {
+        return totalRejected.get();
+    }
+
     public LimitedInteger getPtr() {
         return ptr;
     }
@@ -76,6 +81,7 @@ public class Buffer {
                 case Priority.WARNING -> warningRejected.incrementAndGet();
                 case Priority.METRICS -> metricsRejected.incrementAndGet();
             }
+            totalRejected.incrementAndGet();
 
             RequestTracker.trackInBuffer(request);
             request.setStatus(RequestStatus.IN_BUFFER);

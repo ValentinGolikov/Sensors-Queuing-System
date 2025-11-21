@@ -13,8 +13,6 @@ import java.util.Scanner;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class ManualModeController {
-    private final AtomicBoolean paused = new AtomicBoolean(true);
-
     public void displaySystemState(Buffer buffer, SelectionDispatcher dispatcher, RequestsGenerator requestsGenerator) {
         System.out.println("\n" + "=".repeat(100));
         System.out.println("Состояние системы");
@@ -152,6 +150,15 @@ public class ManualModeController {
         System.out.println("║──────────│───────────────│────────║");
 
         System.out.println("╚═══════════════════════════════════╝");
+
+        int totalGenerated = requestsGenerator.getTotalGenerated();
+        int totalRejected = buffer.getTotalRejected();
+        System.out.printf("Всего сгенерировано: %2d, Отказы: %2d\n", totalGenerated, totalRejected);
+        if (totalGenerated == 0) {
+            System.out.println("Процент отказа: " + 0);
+        } else {
+            System.out.printf("Процент отказа: %.2f%%\n", totalRejected * 100.0 / totalGenerated);
+        }
     }
 
     public void calculateTimeInSystem(RequestTracker.RequestInfo info) {
