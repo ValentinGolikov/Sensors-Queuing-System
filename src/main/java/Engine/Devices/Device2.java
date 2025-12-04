@@ -38,6 +38,6 @@ public class Device2 extends Engine.Devices.Device {
     }
 
     private void saveToDatabase(Request request) {
-        System.out.println("Device2: Сохранение отчета в БД для заявки " + request.getId());
+        //System.out.println("Device2: Сохранение отчета в БД для заявки " + request.getId());
     }
 }

@@ -6,6 +6,7 @@ import Engine.Tracking.ManualModeController;
 import Engine.Tracking.RequestTracker;
 
 import java.util.Scanner;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class Engine {
     private static ManualModeController manualController;
@@ -54,17 +55,47 @@ public class Engine {
             }
 
         } else {
-            // В АВТОМАТИЧЕСКОМ РЕЖИМЕ: сразу запускаем потоки
+            AtomicBoolean running = new AtomicBoolean(true);
+            Thread keyboardListenerThread = new Thread(() -> {
+                Scanner scanner = new Scanner(System.in);
+                while (running.get()) {
+                    if (scanner.hasNextLine()) {
+                        String input = scanner.nextLine().trim();
+                        if (input.equalsIgnoreCase("q")) {
+                            System.out.println("\nПолучена команда остановки. Завершение работы...");
+                            running.set(false);
+                            // Останавливаем все компоненты
+                            stopAllComponents(requestsGenerator, selectionDispatcher,
+                                    controller, receptionDispatcher);
+                            scanner.close();
+                            break;
+                        }
+                    }
+                    try {
+                        Thread.sleep(100); // Небольшая задержка для уменьшения нагрузки на CPU
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        break;
+                    }
+                }
+            }, "keyboardListenerThread");
+            keyboardListenerThread.setDaemon(true);
+            keyboardListenerThread.start();
+
+            // Запускаем рабочие потоки
             controllerThread.start();
             receptionDispatcherThread.start();
             requestsGeneratorThread.start();
             selectionDispatcherThread.start();
 
+            // Ждем завершения всех потоков
             try {
                 controllerThread.join();
                 receptionDispatcherThread.join();
                 requestsGeneratorThread.join();
                 selectionDispatcherThread.join();
+                keyboardListenerThread.join(1000); // Ждем завершения слушателя
+                System.out.println("Всего отказов: " + buf.getTotalRejected());
             } catch (InterruptedException e) {
                 System.err.println(e);
             }
@@ -122,7 +153,6 @@ public class Engine {
                 case "q":
                 case "Q":
                     running = false;
-                    ThreadPauser.resumeAllThreads();
                     System.out.println("Завершение работы...");
                     break;
 
@@ -160,7 +190,7 @@ public class Engine {
         }
 
         // Финальная статистика
-        System.out.println("\n📊 ФИНАЛЬНАЯ СТАТИСТИКА:");
+        System.out.println("\nФИНАЛЬНАЯ СТАТИСТИКА:");
         System.out.println("Всего обработано заявок: " + RequestTracker.getTotalProcessed());
         System.out.println("=== СИСТЕМА ЗАВЕРШИЛА РАБОТУ ===");
     }

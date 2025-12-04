@@ -34,7 +34,7 @@ public class FileWriterUtil {
 
         try (FileWriter writer = new FileWriter(filePath.toFile())) {
             writer.write(request.getData());
-            System.out.println("Файл сохранен: " + filePath);
+            //System.out.println("Файл сохранен: " + filePath);
         } catch (IOException e) {
             System.err.println("Ошибка при записи файла " + fileName + ": " + e.getMessage());
         }

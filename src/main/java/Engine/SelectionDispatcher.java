@@ -86,12 +86,7 @@ public class SelectionDispatcher implements Runnable {
         Device selectedDevice = selectDevice(priority);
 
         if (selectedDevice != null) {
-            System.out.println("SelectionDispatcher: Направляю заявку " + request.getId() +
-                    " с приоритетом " + priority + " на " + selectedDevice.getName());
             selectedDevice.submitRequest(request);
-        } else {
-            System.out.println("SelectionDispatcher: Не найден свободный прибор для заявки " + request.getId());
-            // Можно добавить логику повторной попытки или отложенной обработки
         }
     }
 
@@ -143,20 +138,11 @@ public class SelectionDispatcher implements Runnable {
 
     public void stop() {
         running.set(false);
-        System.out.println("SelectionDispatcher: получена команда остановки");
 
         // Также останавливаем устройства
         device1.stop();
         device2.stop();
         device3.stop();
-        try {
-            device1Thread.join(1000);
-            device2Thread.join(1000);
-            device3Thread.join(1000);
-        }
-        catch (InterruptedException e) {
-            System.err.println(e);
-        }
     }
 
 }

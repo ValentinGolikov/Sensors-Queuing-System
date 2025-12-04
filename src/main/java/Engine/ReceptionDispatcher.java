@@ -29,7 +29,7 @@ public class ReceptionDispatcher implements Runnable {
                     Request request = controller.getRequestsQueue().take();
 
 
-                    System.out.println("Request with ID " + request.getId() + " " + buffer.addRequest(request));
+                    System.out.println("Get request with ID " + request.getId() + ", status: " + buffer.addRequest(request));
 
                 } catch (InterruptedException e) {
                     System.out.println("ReceptionDispatcher interrupted");
