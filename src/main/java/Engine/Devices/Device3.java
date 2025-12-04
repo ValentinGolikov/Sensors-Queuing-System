@@ -20,7 +20,7 @@ public class Device3 extends Engine.Devices.Device {
             // Сохранение данных метрик в базу данных
             saveMetricsToDatabase(request);
             System.out.println("Device3: sleeping for " + (long) Math.exp((double) getProcessedCount() / 10));
-            Thread.sleep((long) Math.exp((double) getProcessedCount() / 10));
+            Thread.sleep((long) Math.exp((double) (getProcessedCount())/10));
         } catch (InterruptedException e) {
             System.err.println(e);
         }

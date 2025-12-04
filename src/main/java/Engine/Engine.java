@@ -82,7 +82,7 @@ public class Engine {
         boolean running = true;
 
         while (running) {
-            System.out.println("\n🚦 СИСТЕМА В РУЧНОМ РЕЖИМЕ");
+            System.out.println("\nСИСТЕМА В РУЧНОМ РЕЖИМЕ");
             System.out.println("Команды:");
             System.out.println("  [Enter] - следующий шаг");
             System.out.println("  'start' + Enter - запустить все потоки");
