@@ -5,12 +5,18 @@ import Engine.Threads.ThreadPauser;
 import Engine.Tracking.ManualModeController;
 import Engine.Tracking.RequestTracker;
 
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Scanner;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class Engine {
     private static ManualModeController manualController;
     private static boolean manualMode = false;
+
+    private static final List<RequestStatistic> requestStatistics = new ArrayList<>();
 
     public static void main(String[] args) {
         // Проверяем аргументы командной строки
@@ -55,6 +61,8 @@ public class Engine {
             }
 
         } else {
+            System.out.println("\nСИСТЕМА В АВТОМАТИЧЕСКОМ РЕЖИМЕ");
+            System.out.println("\nВведите q для выхода");
             AtomicBoolean running = new AtomicBoolean(true);
             Thread keyboardListenerThread = new Thread(() -> {
                 Scanner scanner = new Scanner(System.in);
@@ -66,7 +74,7 @@ public class Engine {
                             running.set(false);
                             // Останавливаем все компоненты
                             stopAllComponents(requestsGenerator, selectionDispatcher,
-                                    controller, receptionDispatcher);
+                                    controller, receptionDispatcher, buf);
                             scanner.close();
                             break;
                         }
@@ -100,6 +108,7 @@ public class Engine {
                 System.err.println(e);
             }
         }
+        printStatistic(requestsGenerator, buf);
     }
 
     private static void runManualMode(Buffer buffer, SelectionDispatcher selectionDispatcher,
@@ -157,7 +166,7 @@ public class Engine {
                     break;
 
                 default:
-                    System.out.println("Неизвестная команда. Доступные команды: [Enter], 's', 'start', 'q'");
+                    System.out.println("Неизвестная команда. Доступные команды: [Enter], 'start', 'q'");
                     break;
             }
         }
@@ -165,14 +174,13 @@ public class Engine {
         // Останавливаем систему если она была запущена
         if (systemStarted) {
             stopAllComponents(requestsGenerator, selectionDispatcher, controller,
-                    receptionDispatcher);
+                    receptionDispatcher, buffer);
         }
-
         scanner.close();
     }
 
     private static void stopAllComponents(RequestsGenerator requestsGenerator, SelectionDispatcher selectionDispatcher,
-                                          Controller controller, ReceptionDispatcher receptionDispatcher) {
+                                          Controller controller, ReceptionDispatcher receptionDispatcher, Buffer buffer) {
         System.out.println("\nОСТАНОВКА СИСТЕМЫ...");
 
         // Останавливаем компоненты в правильном порядке
@@ -188,10 +196,132 @@ public class Engine {
         if (receptionDispatcher != null) {
             receptionDispatcher.stop();
         }
+    }
+
+    private static double calculateAverageTimeForSource(int sourceType, List<RequestStatistic> stats, TimeCalculator calculator) {
+        double total = 0;
+        int count = 0;
+
+        for (RequestStatistic stat : stats) {
+            if (getSourceTypeFromPriority(stat.priority) == sourceType && stat.processed) {
+                long time = calculator.calculate(stat);
+                if (time > 0) {
+                    total += time;
+                    count++;
+                }
+            }
+        }
+
+        return count > 0 ? total / count : 0;
+    }
+
+    private static int getSourceTypeFromPriority(Priority priority) {
+        switch (priority) {
+            case CRITICAL: return 1;
+            case WARNING: return 2;
+            case METRICS: return 3;
+            default: return 0;
+        }
+    }
+    private static void printStatistic(RequestsGenerator requestsGenerator, Buffer buffer){
+        // Статистика по источникам
+        String[] sources = {"1 (Critical)", "2 (Warning) ", "3 (Metrics) "};
+        int[] generated = {
+                requestsGenerator.getCriticalGenerated(),
+                requestsGenerator.getWarningGenerated(),
+                requestsGenerator.getMetricsGenerated()
+        };
+        int[] rejected = {
+                buffer.getCriticalRejected(),
+                buffer.getWarningRejected(),
+                buffer.getMetricsRejected()
+        };
 
         // Финальная статистика
-        System.out.println("\nФИНАЛЬНАЯ СТАТИСТИКА:");
-        System.out.println("Всего обработано заявок: " + RequestTracker.getTotalProcessed());
+        System.out.println("\nФИНАЛЬНАЯ СТАТИСТИКА:\n");
+
+        System.out.println("╔════════════════════════════════════════════════════════════════════════════════════╗");
+        System.out.println("║     Src      │  Gen  │  Rej  │  T_sys  │  T_wait  │  T_serv  │  D_wait  │  D_serv  ║");
+        System.out.println("╠════════════════════════════════════════════════════════════════════════════════════╣");
+
+        synchronized (requestStatistics) {
+            for (int i = 0; i < sources.length; i++) {
+                double percentRejected = generated[i] > 0 ? (double) rejected[i] / generated[i] * 100 : 0;
+                double avgWaitTime = 0.0;
+                switch (i){
+                    case 0 -> avgWaitTime = buffer.getCountCritical() > 0 ?
+                            (double) buffer.getFullTimeInBufferCritical() / buffer.getCountCritical() : 0;
+                    case 1 -> avgWaitTime = buffer.getCountWarning() > 0 ?
+                            (double) buffer.getFullTimeInBufferWarning() / buffer.getCountWarning() : 0;
+                    case 2 -> avgWaitTime = buffer.getCountMetrics() > 0 ?
+                            (double) buffer.getFullTimeInBufferMetrics() / buffer.getCountMetrics() : 0;
+                }
+                double avgTimeInSystem = calculateAverageTimeForSource(i + 1, requestStatistics,
+                        RequestStatistic::getWaitTime);
+                double avgServiceTime = calculateAverageTimeForSource(i + 1, requestStatistics,
+                        RequestStatistic::getServiceTime);
+
+                System.out.printf("║ %-10s │ %-6d│ %-6.2f│ %-8.2f│ %-9.2f│ %-9.2f│ %-9s│ %-9s║%n",
+                        sources[i],
+                        generated[i],
+                        percentRejected,
+                        avgTimeInSystem,
+                        avgWaitTime,       // переводим в секунды
+                        avgServiceTime / 1000.0,    // переводим в секунды
+                        "---",  // D_wait - пока не трогаем
+                        "---"   // D_serv - пока не трогаем
+                );
+            }
+        }
+
+        System.out.println("╚════════════════════════════════════════════════════════════════════════════════════╝");
+
+        //System.out.println("Всего обработано заявок: " + RequestTracker.getTotalProcessed());
         System.out.println("=== СИСТЕМА ЗАВЕРШИЛА РАБОТУ ===");
     }
+
+    private static class RequestStatistic {
+        int requestId;
+        String source;
+        Priority priority;
+        LocalDateTime timeCreated;
+        LocalDateTime timeInBuffer;
+        LocalDateTime timeInDevice;
+        LocalDateTime timeProcessed;
+        boolean processed = false;
+        boolean rejected = false;
+
+        RequestStatistic(int requestId, String source, Priority priority) {
+            this.requestId = requestId;
+            this.source = source;
+            this.priority = priority;
+            this.timeCreated = LocalDateTime.now();
+        }
+
+        long getTimeInSystem() {
+            if (timeProcessed != null && timeCreated != null) {
+                return Duration.between(timeCreated, timeProcessed).toMillis();
+            }
+            return 0;
+        }
+
+        long getWaitTime() {
+            if (timeInDevice != null && timeCreated != null) {
+                return Duration.between(timeCreated, timeInDevice).toMillis();
+            }
+            return 0;
+        }
+
+        long getServiceTime() {
+            if (timeProcessed != null && timeInDevice != null) {
+                return Duration.between(timeInDevice, timeProcessed).toMillis();
+            }
+            return 0;
+        }
+    }
+    @FunctionalInterface
+    private interface TimeCalculator {
+        long calculate(RequestStatistic stat);
+    }
+
 }

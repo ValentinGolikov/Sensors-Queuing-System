@@ -59,7 +59,7 @@ public abstract class Device implements Runnable {
 
         RequestTracker.trackInDevice(request, name);
         try {
-            System.out.println(name + " обрабатывает заявку: " + request.getId() + " с приоритетом: " + request.getPriority());
+            System.out.println(name + " обрабатывает заявку: " + request.getId());
 
             // Логика обработки заявки (формирование отчета, уведомление и т.д.)
             handleRequest(request);

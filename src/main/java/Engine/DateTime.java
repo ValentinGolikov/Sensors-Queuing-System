@@ -1,5 +1,6 @@
 package Engine;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
@@ -21,6 +22,12 @@ public class DateTime {
 
     public int compareTo(DateTime other) {
         return this.dateTime.compareTo(other.dateTime);
+    }
+
+    public long getDifferenceFromNow() {
+        LocalDateTime now = LocalDateTime.now();
+        Duration duration = Duration.between(this.dateTime, now);
+        return duration.toMillis();
     }
 
 }

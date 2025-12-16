@@ -63,6 +63,12 @@ public class SelectionDispatcher implements Runnable {
             try {
                 ThreadPauser.checkPause();
                 Request request = buffer.getNextRequest(running);
+                if (request.getPriority().equals(Priority.CRITICAL)) {
+                    System.out.println("Critical detected");
+                }
+                if (request.getPriority().equals(Priority.WARNING)) {
+                    System.out.println("Warning detected");
+                }
                 if (request != null) {
                     dispatchRequest(request);
                 }
@@ -98,7 +104,7 @@ public class SelectionDispatcher implements Runnable {
 
             case WARNING:
                 // Предупреждения: сначала Device2, если занят - Device1
-                if (device2.isAvailable() && device2.canHandle(priority)) {
+                if (device2.isAvailable()) {
                     return device2;
                 } else {
                     return waitForDevice(device1, priority);

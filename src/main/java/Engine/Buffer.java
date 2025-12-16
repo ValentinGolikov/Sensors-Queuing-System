@@ -4,6 +4,7 @@ import Engine.Threads.RequestsGenerator;
 import Engine.Tracking.RequestTracker;
 
 import javax.swing.*;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -16,6 +17,13 @@ public class Buffer {
     private final AtomicInteger totalRejected = new AtomicInteger(0);
     private final LimitedInteger ptr;
     private final ArrayList<Request> requests;
+    private long fullTimeInBufferCritical = Duration.ZERO.toMillis();
+    private long fullTimeInBufferWarning = Duration.ZERO.toMillis();
+    private long fullTimeInBufferMetrics = Duration.ZERO.toMillis();
+
+    private int countCritical = 0;
+    private int countWarning = 0;
+    private int countMetrics = 0;
 
     private boolean hasSpace(){
         for (Request request : requests) {
@@ -86,6 +94,11 @@ public class Buffer {
             RequestTracker.trackInBuffer(request);
             request.setStatus(RequestStatus.IN_BUFFER);
             requests.set(ptr.getValue(), request);
+            switch (request.getPriority()){
+                case CRITICAL -> countCritical++;
+                case WARNING -> countWarning++;
+                case METRICS -> countMetrics++;
+            }
             this.ptr.increment();
         }
         else {
@@ -93,6 +106,11 @@ public class Buffer {
                 RequestTracker.trackInBuffer(request);
                 request.setStatus(RequestStatus.IN_BUFFER);
                 requests.set(ptr.getValue(), request);
+                switch (request.getPriority()){
+                    case CRITICAL -> countCritical++;
+                    case WARNING -> countWarning++;
+                    case METRICS -> countMetrics++;
+                }
                 this.ptr.increment();
             } else {
                 this.ptr.increment();
@@ -134,11 +152,24 @@ public class Buffer {
         pointer.increment();
         }
         requests.set(current_pointer, null);
-        req.setStatus(RequestStatus.PROCESSED);
+        req.setStatus(RequestStatus.PROCESSING);
+        switch (req.getPriority()) {
+            case CRITICAL -> fullTimeInBufferCritical += req.getGenerationTime().getDifferenceFromNow();
+            case WARNING -> fullTimeInBufferWarning += req.getGenerationTime().getDifferenceFromNow();
+            case METRICS -> fullTimeInBufferMetrics += req.getGenerationTime().getDifferenceFromNow();
+        }
         return req;
     }
 
     public Request getRequest(int i) {
         return requests.get(i);
     }
+
+    public long getFullTimeInBufferCritical() { return fullTimeInBufferCritical; }
+    public long getFullTimeInBufferWarning() { return fullTimeInBufferWarning; }
+    public long getFullTimeInBufferMetrics() { return fullTimeInBufferMetrics; }
+
+    public int getCountCritical() { return countCritical; }
+    public int getCountWarning() { return countWarning; }
+    public int getCountMetrics() { return countMetrics; }
 }
