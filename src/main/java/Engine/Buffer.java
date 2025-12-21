@@ -82,8 +82,7 @@ public class Buffer {
 
     public RequestStatus addRequest(Request request) {
         if (!hasSpace()) {
-            System.out.println("===================INIT REJECTION=================== " +
-                    requests.get(ptr.getValue()).getPriority() + " " + requests.get(ptr.getValue()).getId());
+            //System.out.println("===================INIT REJECTION=================== " + requests.get(ptr.getValue()).getPriority() + " " + requests.get(ptr.getValue()).getId());
             requests.get(ptr.getValue()).setStatus(RequestStatus.REJECTED);
 
             Priority priority = requests.get(ptr.getValue()).getPriority();

@@ -23,7 +23,7 @@ public class CriticalGenerator implements Runnable {
 
     @Override
     public void run() {
-        System.out.println(Thread.currentThread().getName() + " запущен");
+        //System.out.println(Thread.currentThread().getName() + " запущен");
 
         while (running.get()) {
             try {
@@ -44,6 +44,6 @@ public class CriticalGenerator implements Runnable {
                 break;
             }
         }
-        System.out.println(Thread.currentThread().getName() + " завершен");
+        //System.out.println(Thread.currentThread().getName() + " завершен");
     }
 }

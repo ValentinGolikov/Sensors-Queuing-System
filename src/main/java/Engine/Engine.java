@@ -18,7 +18,7 @@ public class Engine {
 
     private static int TIMEOUT = 10000;
 
-    public static void main(String[] args) {
+    public static void main(String[] args){
         // Проверяем аргументы командной строки
         if (args.length > 0) {
             if (args[0].equals("-manual")){
@@ -29,9 +29,10 @@ public class Engine {
             else if (args[0].equals("-auto")) {
                 System.out.println("=== АВТОМАТИЧЕСКИЙ РЕЖИМ ===");
                 if (args[1].equals("-t")){
-                    Scanner scan = new Scanner(args[2]);
-                    if (scan.hasNextInt()){
-                        TIMEOUT = scan.nextInt();
+                    try {
+                        TIMEOUT = Integer.parseInt(args[2]);
+                    } catch (NumberFormatException e) {
+                        System.err.println("Неверный формат времени. Используется значение по умолчанию: " + TIMEOUT);
                     }
                 }
             }
@@ -40,6 +41,8 @@ public class Engine {
         System.out.printf("\nСИСТЕМА В АВТОМАТИЧЕСКОМ РЕЖИМЕ (%dмс))\n", TIMEOUT);
         System.out.println("Press any key to continue...");
         scanner.nextLine();
+
+        FancyProgressBar.start(TIMEOUT);
 
         Buffer buf = new Buffer(10);
         Controller controller = new Controller();
@@ -232,6 +235,7 @@ public class Engine {
         System.out.println("║     Src      │  Gen  │ Rej(%) │  T_sys  │  T_wait  │  T_serv  │  D_wait  │  D_serv  ║");
         System.out.println("╠═════════════════════════════════════════════════════════════════════════════════════╣");
         double avgLifeTime = 0.0;
+        double avgPercentRejected = 0.0;
         for (int i = 0; i < sources.length; i++) {
             int countCritical = buffer.getCountCritical();
             int countWarning = buffer.getCountWarning();
@@ -313,10 +317,12 @@ public class Engine {
                     dispServ  // D_serv - пока не трогаем
             );
             avgLifeTime += avgTimeInSystem;
+            avgPercentRejected += percentRejected;
         }
 
         System.out.println("╚═════════════════════════════════════════════════════════════════════════════════════╝");
         System.out.printf("Average request's lifetime in system: %.2f\n", avgLifeTime/3);
+        System.out.printf("Average rejection in system: %.2f%%\n", avgPercentRejected/3);
 
         System.out.println("\n╔═════════════════════════════════════════════════╗");
         System.out.println("║  Device  │  Processed  │ BusyTime │  Usage (%)  ║");

@@ -52,7 +52,7 @@ public class SelectionDispatcher implements Runnable {
 
     @Override
     public void run() {
-        System.out.println("SelectionDispatcher запущен");
+        //System.out.println("SelectionDispatcher запущен");
 
         // Запускаем все приборы
         device1Thread.start();
@@ -78,7 +78,7 @@ public class SelectionDispatcher implements Runnable {
         device2.stop();
         device3.stop();
 
-        System.out.println("SelectionDispatcher завершен");
+        //System.out.println("SelectionDispatcher завершен");
     }
 
     private void dispatchRequest(Request request) throws InterruptedException {

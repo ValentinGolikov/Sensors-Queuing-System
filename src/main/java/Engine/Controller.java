@@ -26,7 +26,7 @@ public class Controller implements Runnable {
      */
     @Override
     public void run() {
-        System.out.println("Controller started");
+        //System.out.println("Controller started");
 
         while (isRunning) {
             if (RequestsGenerator.isStopped() && dataPackQueue.isEmpty()) {
@@ -53,7 +53,7 @@ public class Controller implements Runnable {
             }
         }
 
-        System.out.println("Controller stopped");
+        //System.out.println("Controller stopped");
     }
 
     /**
@@ -96,6 +96,6 @@ public class Controller implements Runnable {
 
     public void stop() {
         isRunning = false;
-        System.out.println("Controller: получена команда остановки");
+        //System.out.println("Controller: получена команда остановки");
     }
 }

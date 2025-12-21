@@ -25,7 +25,7 @@ public class RequestsGenerator implements Runnable {
 
     @Override
     public void run() {
-        System.out.println("=== ЗАПУСК ГЕНЕРАТОРА ЗАЯВОК ===");
+        //System.out.println("=== ЗАПУСК ГЕНЕРАТОРА ЗАЯВОК ===");
 
         criticalThread = new Thread(new CriticalGenerator(running, controller, totalGenerated, criticalGenerated), "Critical-Generator");
         warningThread = new Thread(new WarningGenerator(running, controller, totalGenerated, warningGenerated), "Warning-Generator");
@@ -42,7 +42,7 @@ public class RequestsGenerator implements Runnable {
             criticalThread.join();
 
             System.out.println("Всего сгенерировано заявок: " + totalGenerated.get());
-            System.out.println("=== ГЕНЕРАТОР ЗАЯВОК ЗАВЕРШЕН ===");
+            //System.out.println("=== ГЕНЕРАТОР ЗАЯВОК ЗАВЕРШЕН ===");
 
         } catch (InterruptedException e) {
             System.err.println("Генератор заявок прерван: " + e.getMessage());
@@ -68,7 +68,7 @@ public class RequestsGenerator implements Runnable {
 
     public void stop() {
         running.set(false);
-        System.out.println("\n=== ОСТАНОВКА ГЕНЕРАЦИИ ===");
+        //System.out.println("\n=== ОСТАНОВКА ГЕНЕРАЦИИ ===");
         stopFlag = true;
 
         // Прерываем потоки-генераторы на случай, если они спят

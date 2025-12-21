@@ -15,7 +15,7 @@ public class ReceptionDispatcher implements Runnable {
 
     @Override
     public void run() {
-        System.out.println("ReceptionDispatcher started");
+        //System.out.println("ReceptionDispatcher started");
 
         while (isRunning) {
             if (controller.getRequestsQueue().isEmpty()) {
@@ -29,8 +29,8 @@ public class ReceptionDispatcher implements Runnable {
                     Request request = controller.getRequestsQueue().take();
 
 
-                    System.out.println("Get request with ID " + request.getId() + ", status: " + buffer.addRequest(request) + ", priority: " + request.getPriority());
-
+                    //System.out.println("Get request with ID " + request.getId() + ", status: " + buffer.addRequest(request) + ", priority: " + request.getPriority());
+                    buffer.addRequest(request);
                 } catch (InterruptedException e) {
                     System.out.println("ReceptionDispatcher interrupted");
                     Thread.currentThread().interrupt();
@@ -41,11 +41,11 @@ public class ReceptionDispatcher implements Runnable {
             }
         }
 
-        System.out.println("ReceptionDispatcher stopped");
+        //System.out.println("ReceptionDispatcher stopped");
     }
 
     public void stop() {
         isRunning = false;
-        System.out.println("ReceptionDispatcher: получена команда остановки");
+        //System.out.println("ReceptionDispatcher: получена команда остановки");
     }
 }

@@ -49,7 +49,7 @@ public class Device implements Runnable {
 
     @Override
     public void run() {
-        System.out.println(name + " запущен");
+        //System.out.println(name + " запущен");
 
         while (running.get() || !processingQueue.isEmpty()) {
             try {
@@ -63,7 +63,7 @@ public class Device implements Runnable {
             }
         }
 
-        System.out.println(name + " завершен. Обработано заявок: " + processedCount.get());
+        //System.out.println(name + " завершен. Обработано заявок: " + processedCount.get());
     }
 
     protected void processRequest(Request request) {
@@ -73,7 +73,7 @@ public class Device implements Runnable {
 
         RequestTracker.trackInDevice(request, name);
         try {
-            System.out.println(name + " обрабатывает заявку: " + request.getId());
+            //System.out.println(name + " обрабатывает заявку: " + request.getId());
 
             switch (request.getPriority()) {
                 case CRITICAL:
@@ -94,7 +94,7 @@ public class Device implements Runnable {
             }
 
             processedCount.incrementAndGet();
-            System.out.println(name + " завершил обработку заявки: " + request.getId());
+            //System.out.println(name + " завершил обработку заявки: " + request.getId());
             request.setStatus(RequestStatus.PROCESSED);
             RequestTracker.trackProcessed(request);
         } catch (InterruptedException e) {
@@ -111,17 +111,17 @@ public class Device implements Runnable {
         ThreadPauser.checkPause();
         // Формирование критического отчета или отчета-предупреждения
         if (request.getPriority() == Priority.CRITICAL) {
-            System.out.println(threadName + ": Формирование КРИТИЧЕСКОГО отчета для заявки " + request.getId());
+            //System.out.println(threadName + ": Формирование КРИТИЧЕСКОГО отчета для заявки " + request.getId());
             NotificationSystem.sendNotification(request, getName());
         } else {
-            System.out.println(threadName + ": Формирование отчета-ПРЕДУПРЕЖДЕНИЯ для заявки " + request.getId());
+            //System.out.println(threadName + ": Формирование отчета-ПРЕДУПРЕЖДЕНИЯ для заявки " + request.getId());
             NotificationSystem.sendNotification(request, getName());
         }
         // Сохранение в базу данных
         saveToDatabase(request);
 
         //System.out.println(threadName + ": sleeping for " + (long) Math.exp((double)getProcessedCount()/1000));
-        Thread.sleep((long) Math.exp((double) getProcessedCount()/1000));
+        Thread.sleep((long) Math.exp((double) getProcessedCount()/100));
     }
 
     public void handleWarningRequest(Request request) throws InterruptedException {
@@ -129,7 +129,7 @@ public class Device implements Runnable {
         ThreadPauser.checkPause();
 
         // Формирование отчета-предупреждения
-        System.out.println(threadName + ": Формирование отчета-ПРЕДУПРЕЖДЕНИЯ для заявки " + request.getId());
+        //System.out.println(threadName + ": Формирование отчета-ПРЕДУПРЕЖДЕНИЯ для заявки " + request.getId());
 
         // Отправка уведомления инженеру
         NotificationSystem.sendNotification(request, getName());
@@ -137,18 +137,18 @@ public class Device implements Runnable {
         // Сохранение в базу данных
         saveToDatabase(request);
         //System.out.println(threadName + ": sleeping for " + (long) Math.exp((double)getProcessedCount()/1000));
-        Thread.sleep((long) Math.exp((double) getProcessedCount()/1000));
+        Thread.sleep((long) Math.exp((double) getProcessedCount()/100));
     }
 
     public void handleMetricsRequest(Request request) throws InterruptedException {
         String threadName = Thread.currentThread().getName();
         ThreadPauser.checkPause();
-        System.out.println(threadName + ": Обработка МЕТРИК для заявки " + request.getId());
+        //System.out.println(threadName + ": Обработка МЕТРИК для заявки " + request.getId());
 
         // Сохранение данных метрик в базу данных
         saveMetricsToDatabase(request);
         //System.out.println(threadName + ": sleeping for " + (long) Math.exp((double)getProcessedCount()/1000));
-        Thread.sleep((long) Math.exp((double) getProcessedCount()/1000));
+        Thread.sleep((long) Math.exp((double) getProcessedCount()/100));
     }
 
     // Добавление заявки в очередь обработки
