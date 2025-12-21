@@ -31,6 +31,8 @@ public class Device implements Runnable {
     private final ArrayList<Long> reqTimeOnDeviceMetrics = new ArrayList<>();
     private DateTime timeStart;
 
+    private long busyTime;
+
     protected static final long TIMEOUT = 10000;
 
     // Параметр лямбда для экспоненциального распределения
@@ -66,6 +68,7 @@ public class Device implements Runnable {
 
     protected void processRequest(Request request) {
         isBusy.set(true);
+        DateTime startPoint = new DateTime();
         currentRequest = request;
 
         RequestTracker.trackInDevice(request, name);
@@ -98,6 +101,7 @@ public class Device implements Runnable {
             System.err.println(e);
         } finally {
             isBusy.set(false);
+            busyTime += startPoint.getDifferenceFromNow();
         }
     }
 
@@ -117,7 +121,7 @@ public class Device implements Runnable {
         saveToDatabase(request);
 
         //System.out.println(threadName + ": sleeping for " + (long) Math.exp((double)getProcessedCount()/1000));
-        Thread.sleep((long) Math.exp((double) getProcessedCount()/100));
+        Thread.sleep((long) Math.exp((double) getProcessedCount()/1000));
     }
 
     public void handleWarningRequest(Request request) throws InterruptedException {
@@ -133,7 +137,7 @@ public class Device implements Runnable {
         // Сохранение в базу данных
         saveToDatabase(request);
         //System.out.println(threadName + ": sleeping for " + (long) Math.exp((double)getProcessedCount()/1000));
-        Thread.sleep((long) Math.exp((double) getProcessedCount()/100));
+        Thread.sleep((long) Math.exp((double) getProcessedCount()/1000));
     }
 
     public void handleMetricsRequest(Request request) throws InterruptedException {
@@ -144,7 +148,7 @@ public class Device implements Runnable {
         // Сохранение данных метрик в базу данных
         saveMetricsToDatabase(request);
         //System.out.println(threadName + ": sleeping for " + (long) Math.exp((double)getProcessedCount()/1000));
-        Thread.sleep((long) Math.exp((double) getProcessedCount()/100));
+        Thread.sleep((long) Math.exp((double) getProcessedCount()/1000));
     }
 
     // Добавление заявки в очередь обработки
@@ -168,6 +172,10 @@ public class Device implements Runnable {
 
     public int getProcessedCount() {
         return processedCount.get();
+    }
+
+    public long getBusyTime(){
+        return busyTime;
     }
 
     public Request getCurrentRequest() { return currentRequest; }

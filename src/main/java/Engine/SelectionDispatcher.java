@@ -10,18 +10,16 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class SelectionDispatcher implements Runnable {
     private final Buffer buffer;
+    private final ManualModeController manualController;
     private Device device1;
     private Device device2;
     private Device device3;
-    private Device device4;
     private final AtomicBoolean running;
     private final LimitedInteger pointer = new LimitedInteger(2);
-    private final ManualModeController manualController;
 
     private Thread device1Thread;
     private Thread device2Thread;
     private Thread device3Thread;
-    private Thread device4Thread;
 
     public SelectionDispatcher(Buffer buffer) {
         this(buffer, null);
@@ -29,13 +27,11 @@ public class SelectionDispatcher implements Runnable {
         this.device1 = new Device("Device1");
         this.device2 = new Device("Device2");
         this.device3 = new Device("Device3");
-        this.device4 = new Device("Device4");
 
         // Запускаем потоки приборов
         this.device1Thread = new Thread(device1, "Device1-Thread");
         this.device2Thread = new Thread(device2, "Device2-Thread");
         this.device3Thread = new Thread(device3, "Device3-Thread");
-        this.device4Thread = new Thread(device4, "Device4-Thread");
     }
 
     public SelectionDispatcher(Buffer buffer, ManualModeController manualController) {
@@ -47,13 +43,11 @@ public class SelectionDispatcher implements Runnable {
         this.device1 = new Device("Device1");
         this.device2 = new Device("Device2");
         this.device3 = new Device("Device3");
-        this.device4 = new Device("Device4");
 
         // Запускаем потоки приборов
         this.device1Thread = new Thread(device1, "Device1-Thread");
         this.device2Thread = new Thread(device2, "Device2-Thread");
         this.device3Thread = new Thread(device3, "Device3-Thread");
-        this.device4Thread = new Thread(device4, "Device4-Thread");
     }
 
     @Override
@@ -64,7 +58,6 @@ public class SelectionDispatcher implements Runnable {
         device1Thread.start();
         device2Thread.start();
         device3Thread.start();
-        device4Thread.start();
 
         while (running.get()) {
             try {
@@ -84,7 +77,6 @@ public class SelectionDispatcher implements Runnable {
         device1.stop();
         device2.stop();
         device3.stop();
-        device4.stop();
 
         System.out.println("SelectionDispatcher завершен");
     }
@@ -141,17 +133,17 @@ public class SelectionDispatcher implements Runnable {
 
     public long getServTimeCritial() {
         return device1.getTimeOnDeviceCritical() + device2.getTimeOnDeviceCritical() +
-                device3.getTimeOnDeviceCritical() + device4.getTimeOnDeviceCritical();
+                device3.getTimeOnDeviceCritical();
     }
 
     public long getServTimeWarning() {
         return device1.getTimeOnDeviceWarning() + device2.getTimeOnDeviceWarning() +
-                device3.getTimeOnDeviceWarning() + device4.getTimeOnDeviceWarning();
+                device3.getTimeOnDeviceWarning();
     }
 
     public long getServTimeMetrics() {
         return device1.getTimeOnDeviceMetrics() + device2.getTimeOnDeviceMetrics() +
-                device3.getTimeOnDeviceMetrics() + device4.getTimeOnDeviceMetrics();
+                device3.getTimeOnDeviceMetrics();
     }
 
     public ArrayList<Long> getArrayServTimeCritical() {
@@ -159,7 +151,6 @@ public class SelectionDispatcher implements Runnable {
         onDeviceTime.addAll(device1.getReqTimeOnDeviceCritical());
         onDeviceTime.addAll(device2.getReqTimeOnDeviceCritical());
         onDeviceTime.addAll(device3.getReqTimeOnDeviceCritical());
-        onDeviceTime.addAll(device4.getReqTimeOnDeviceCritical());
         return onDeviceTime;
     }
 
@@ -168,7 +159,6 @@ public class SelectionDispatcher implements Runnable {
         onDeviceTime.addAll(device1.getReqTimeOnDeviceWarning());
         onDeviceTime.addAll(device2.getReqTimeOnDeviceWarning());
         onDeviceTime.addAll(device3.getReqTimeOnDeviceWarning());
-        onDeviceTime.addAll(device4.getReqTimeOnDeviceWarning());
         return onDeviceTime;
     }
 
@@ -177,8 +167,25 @@ public class SelectionDispatcher implements Runnable {
         onDeviceTime.addAll(device1.getReqTimeOnDeviceMetrics());
         onDeviceTime.addAll(device2.getReqTimeOnDeviceMetrics());
         onDeviceTime.addAll(device3.getReqTimeOnDeviceMetrics());
-        onDeviceTime.addAll(device4.getReqTimeOnDeviceMetrics());
         return onDeviceTime;
+    }
+
+    public int getProcessedCount(int num) {
+        switch(num) {
+            case 0 -> { return device1.getProcessedCount(); }
+            case 1 -> { return device2.getProcessedCount(); }
+            case 2 -> { return device3.getProcessedCount(); }
+            default -> { return -1; }
+        }
+    }
+
+    public long getBusyTime(int num) {
+        switch(num) {
+            case 0 -> { return device1.getBusyTime(); }
+            case 1 -> { return device2.getBusyTime(); }
+            case 2 -> { return device3.getBusyTime(); }
+            default -> { return -1; }
+        }
     }
 
 

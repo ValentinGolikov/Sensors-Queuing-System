@@ -16,18 +16,34 @@ public class Engine {
     private static ManualModeController manualController;
     private static boolean manualMode = false;
 
+    private static int TIMEOUT = 10000;
+
     public static void main(String[] args) {
         // Проверяем аргументы командной строки
-        if (args.length > 0 && args[0].equals("--manual")) {
-            manualMode = true;
-            System.out.println("=== РЕЖИМ РУЧНОГО УПРАВЛЕНИЯ ===");
-            manualController = new ManualModeController();
-        } else {
-            System.out.println("=== АВТОМАТИЧЕСКИЙ РЕЖИМ ===");
+        if (args.length > 0) {
+            if (args[0].equals("-manual")){
+                manualMode = true;
+                System.out.println("=== РЕЖИМ РУЧНОГО УПРАВЛЕНИЯ ===");
+                manualController = new ManualModeController();
+            }
+            else if (args[0].equals("-auto")) {
+                System.out.println("=== АВТОМАТИЧЕСКИЙ РЕЖИМ ===");
+                if (args[1].equals("-t")){
+                    Scanner scan = new Scanner(args[2]);
+                    if (scan.hasNextInt()){
+                        TIMEOUT = scan.nextInt();
+                    }
+                }
+            }
         }
+        Scanner scanner = new Scanner(System.in);
+        System.out.printf("\nСИСТЕМА В АВТОМАТИЧЕСКОМ РЕЖИМЕ (%dмс))\n", TIMEOUT);
+        System.out.println("Press any key to continue...");
+        scanner.nextLine();
 
         Buffer buf = new Buffer(10);
         Controller controller = new Controller();
+
 
         // Создаем компоненты в зависимости от режима
         RequestsGenerator requestsGenerator;
@@ -59,19 +75,15 @@ public class Engine {
             }
 
         } else {
-            System.out.println("\nСИСТЕМА В АВТОМАТИЧЕСКОМ РЕЖИМЕ");
-            System.out.println("\nВведите q для выхода");
             AtomicBoolean running = new AtomicBoolean(true);
             Thread keyboardListenerThread = new Thread(() -> {
-                Scanner scanner = new Scanner(System.in);
                 while (running.get()) {
                     try {
-                        Thread.sleep(20000);
+                        Thread.sleep(TIMEOUT);
                         running.set(false);
                         // Останавливаем все компоненты
                         stopAllComponents(requestsGenerator, selectionDispatcher,
                                 controller, receptionDispatcher, buf);
-                        scanner.close();
                     } catch (InterruptedException e) {
                         Thread.currentThread().interrupt();
                         break;
@@ -219,7 +231,7 @@ public class Engine {
         System.out.println("╔═════════════════════════════════════════════════════════════════════════════════════╗");
         System.out.println("║     Src      │  Gen  │ Rej(%) │  T_sys  │  T_wait  │  T_serv  │  D_wait  │  D_serv  ║");
         System.out.println("╠═════════════════════════════════════════════════════════════════════════════════════╣");
-
+        double avgLifeTime = 0.0;
         for (int i = 0; i < sources.length; i++) {
             int countCritical = buffer.getCountCritical();
             int countWarning = buffer.getCountWarning();
@@ -300,14 +312,30 @@ public class Engine {
                     dispWait,  // D_wait - пока не трогаем
                     dispServ  // D_serv - пока не трогаем
             );
+            avgLifeTime += avgTimeInSystem;
         }
 
         System.out.println("╚═════════════════════════════════════════════════════════════════════════════════════╝");
+        System.out.printf("Average request's lifetime in system: %.2f\n", avgLifeTime/3);
 
-        //System.out.println("Всего обработано заявок: " + RequestTracker.getTotalProcessed());
+        System.out.println("\n╔═════════════════════════════════════════════════╗");
+        System.out.println("║  Device  │  Processed  │ BusyTime │  Usage (%)  ║");
+        System.out.println("╠═════════════════════════════════════════════════╣");
+
+        String[] devices = {"Device1 ", "Device2 ", "Device3 "};
+
+        for (int i = 0; i < devices.length; i++) {
+            int processed = selectionDispatcher.getProcessedCount(i);
+            long busyTime = selectionDispatcher.getBusyTime(i);
+            System.out.printf("║ %-6s │ %-12s│ %-9s│ %-12.2f║%n",
+                    devices[i],
+                    processed,
+                    busyTime,
+                    (double)busyTime/TIMEOUT*100
+            );
+        }
+        System.out.println("╚═════════════════════════════════════════════════╝");
+
         System.out.println("=== СИСТЕМА ЗАВЕРШИЛА РАБОТУ ===");
     }
-
-
-
 }
