@@ -1,16 +1,11 @@
 package Engine.Tracking;
 
 import Engine.*;
-import Engine.Devices.Device;
-import Engine.Threads.CriticalGenerator;
 import Engine.Threads.RequestsGenerator;
 
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Scanner;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 public class ManualModeController {
     public void displaySystemState(Buffer buffer, SelectionDispatcher dispatcher, RequestsGenerator requestsGenerator) {

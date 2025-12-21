@@ -28,7 +28,7 @@ public class WarningGenerator implements Runnable {
         while (running.get()) {
             try {
                 ThreadPauser.checkPause();
-                Thread.sleep(5000);
+                Thread.sleep(50);
 
                 controller.submitDataPack(DataPack.createWarningScenario(
                         DataPack.getRandomElement(TRAINS),

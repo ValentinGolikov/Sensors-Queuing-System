@@ -16,8 +16,6 @@ public class Engine {
     private static ManualModeController manualController;
     private static boolean manualMode = false;
 
-    private static final List<RequestStatistic> requestStatistics = new ArrayList<>();
-
     public static void main(String[] args) {
         // Проверяем аргументы командной строки
         if (args.length > 0 && args[0].equals("--manual")) {
@@ -67,20 +65,13 @@ public class Engine {
             Thread keyboardListenerThread = new Thread(() -> {
                 Scanner scanner = new Scanner(System.in);
                 while (running.get()) {
-                    if (scanner.hasNextLine()) {
-                        String input = scanner.nextLine().trim();
-                        if (input.equalsIgnoreCase("q")) {
-                            System.out.println("\nПолучена команда остановки. Завершение работы...");
-                            running.set(false);
-                            // Останавливаем все компоненты
-                            stopAllComponents(requestsGenerator, selectionDispatcher,
-                                    controller, receptionDispatcher, buf);
-                            scanner.close();
-                            break;
-                        }
-                    }
                     try {
-                        Thread.sleep(100); // Небольшая задержка для уменьшения нагрузки на CPU
+                        Thread.sleep(20000);
+                        running.set(false);
+                        // Останавливаем все компоненты
+                        stopAllComponents(requestsGenerator, selectionDispatcher,
+                                controller, receptionDispatcher, buf);
+                        scanner.close();
                     } catch (InterruptedException e) {
                         Thread.currentThread().interrupt();
                         break;
@@ -108,7 +99,7 @@ public class Engine {
                 System.err.println(e);
             }
         }
-        printStatistic(requestsGenerator, buf);
+        printStatistic(requestsGenerator, selectionDispatcher, buf);
     }
 
     private static void runManualMode(Buffer buffer, SelectionDispatcher selectionDispatcher,
@@ -198,23 +189,6 @@ public class Engine {
         }
     }
 
-    private static double calculateAverageTimeForSource(int sourceType, List<RequestStatistic> stats, TimeCalculator calculator) {
-        double total = 0;
-        int count = 0;
-
-        for (RequestStatistic stat : stats) {
-            if (getSourceTypeFromPriority(stat.priority) == sourceType && stat.processed) {
-                long time = calculator.calculate(stat);
-                if (time > 0) {
-                    total += time;
-                    count++;
-                }
-            }
-        }
-
-        return count > 0 ? total / count : 0;
-    }
-
     private static int getSourceTypeFromPriority(Priority priority) {
         switch (priority) {
             case CRITICAL: return 1;
@@ -223,7 +197,9 @@ public class Engine {
             default: return 0;
         }
     }
-    private static void printStatistic(RequestsGenerator requestsGenerator, Buffer buffer){
+    private static void printStatistic(RequestsGenerator requestsGenerator,
+                                       SelectionDispatcher selectionDispatcher,
+                                       Buffer buffer) {
         // Статистика по источникам
         String[] sources = {"1 (Critical)", "2 (Warning) ", "3 (Metrics) "};
         int[] generated = {
@@ -240,88 +216,98 @@ public class Engine {
         // Финальная статистика
         System.out.println("\nФИНАЛЬНАЯ СТАТИСТИКА:\n");
 
-        System.out.println("╔════════════════════════════════════════════════════════════════════════════════════╗");
-        System.out.println("║     Src      │  Gen  │  Rej  │  T_sys  │  T_wait  │  T_serv  │  D_wait  │  D_serv  ║");
-        System.out.println("╠════════════════════════════════════════════════════════════════════════════════════╣");
+        System.out.println("╔═════════════════════════════════════════════════════════════════════════════════════╗");
+        System.out.println("║     Src      │  Gen  │ Rej(%) │  T_sys  │  T_wait  │  T_serv  │  D_wait  │  D_serv  ║");
+        System.out.println("╠═════════════════════════════════════════════════════════════════════════════════════╣");
 
-        synchronized (requestStatistics) {
-            for (int i = 0; i < sources.length; i++) {
-                double percentRejected = generated[i] > 0 ? (double) rejected[i] / generated[i] * 100 : 0;
-                double avgWaitTime = 0.0;
-                switch (i){
-                    case 0 -> avgWaitTime = buffer.getCountCritical() > 0 ?
-                            (double) buffer.getFullTimeInBufferCritical() / buffer.getCountCritical() : 0;
-                    case 1 -> avgWaitTime = buffer.getCountWarning() > 0 ?
-                            (double) buffer.getFullTimeInBufferWarning() / buffer.getCountWarning() : 0;
-                    case 2 -> avgWaitTime = buffer.getCountMetrics() > 0 ?
-                            (double) buffer.getFullTimeInBufferMetrics() / buffer.getCountMetrics() : 0;
+        for (int i = 0; i < sources.length; i++) {
+            int countCritical = buffer.getCountCritical();
+            int countWarning = buffer.getCountWarning();
+            int countMetrics = buffer.getCountMetrics();
+            double percentRejected = generated[i] > 0 ? (double) rejected[i] / generated[i] * 100 : 0;
+            double avgWaitTime = 0.0;
+            double avgTimeInSystem = 0.0;
+            double avgServiceTime = 0.0;
+            double dispWait = 0.0;
+            double dispServ = 0.0;
+            switch (i){
+                case 0 -> {
+                    avgWaitTime = countCritical > 0 ?
+                        (double) buffer.getFullTimeInBufferCritical() / countCritical : 0;
+                    avgServiceTime = countCritical > 0 ?
+                            (double) selectionDispatcher.getServTimeCritial() / countCritical : 0;
+                    avgTimeInSystem = avgServiceTime + avgWaitTime;
+
+                    double finalAvgWaitTime = avgWaitTime;
+                    double finalAvgServiceTime = avgServiceTime;
+                    long sum = buffer.getReqTimeInBufferCritical().stream()
+                            .mapToLong(time -> (long) Math.pow(time - finalAvgWaitTime, 2))
+                            .sum();
+                    dispWait = ((double) sum/(countMetrics));
+
+                    long summ = selectionDispatcher.getArrayServTimeCritical().stream()
+                            .mapToLong(time -> (long) Math.pow(time - finalAvgServiceTime, 2))
+                            .sum();
+                    dispServ = ((double) summ/(countMetrics));
                 }
-                double avgTimeInSystem = calculateAverageTimeForSource(i + 1, requestStatistics,
-                        RequestStatistic::getWaitTime);
-                double avgServiceTime = calculateAverageTimeForSource(i + 1, requestStatistics,
-                        RequestStatistic::getServiceTime);
+                case 1 -> {
+                    avgWaitTime = countWarning > 0 ?
+                        (double) buffer.getFullTimeInBufferWarning() / countWarning : 0;
+                    avgServiceTime = countWarning > 0 ?
+                            (double) selectionDispatcher.getServTimeWarning() / countWarning : 0;
+                    avgTimeInSystem = avgServiceTime + avgWaitTime;
 
-                System.out.printf("║ %-10s │ %-6d│ %-6.2f│ %-8.2f│ %-9.2f│ %-9.2f│ %-9s│ %-9s║%n",
-                        sources[i],
-                        generated[i],
-                        percentRejected,
-                        avgTimeInSystem,
-                        avgWaitTime,       // переводим в секунды
-                        avgServiceTime / 1000.0,    // переводим в секунды
-                        "---",  // D_wait - пока не трогаем
-                        "---"   // D_serv - пока не трогаем
-                );
+                    double finalAvgWaitTime = avgWaitTime;
+                    double finalAvgServiceTime = avgServiceTime;
+                    long sum = buffer.getReqTimeInBufferWarning().stream()
+                            .mapToLong(time -> (long) Math.pow(time - finalAvgWaitTime, 2))
+                            .sum();
+                    dispWait = ((double) sum/(countMetrics));
+
+                    long summ = selectionDispatcher.getArrayServTimeWarning().stream()
+                            .mapToLong(time -> (long) Math.pow(time - finalAvgServiceTime, 2))
+                            .sum();
+                    dispServ = ((double) summ/(countMetrics));
+                }
+                case 2 -> {
+                    avgWaitTime = countMetrics > 0 ?
+                        (double) buffer.getFullTimeInBufferMetrics() / countMetrics : 0;
+                    avgServiceTime = countMetrics > 0 ?
+                            (double) selectionDispatcher.getServTimeMetrics() / countMetrics : 0;
+                    avgTimeInSystem = avgServiceTime + avgWaitTime;
+
+                    double finalAvgWaitTime = avgWaitTime;
+                    double finalAvgServiceTime = avgServiceTime;
+                    long sum = buffer.getReqTimeInBufferMetrics().stream()
+                            .mapToLong(time -> (long) Math.pow(time - finalAvgWaitTime, 2))
+                            .sum();
+                    dispWait = ((double) sum/(countMetrics));
+
+                    long summ = selectionDispatcher.getArrayServTimeMetrics().stream()
+                            .mapToLong(time -> (long) Math.pow(time - finalAvgServiceTime, 2))
+                            .sum();
+                    dispServ = ((double) summ/(countMetrics));
+                }
             }
+
+            System.out.printf("║ %-10s │ %-6d│ %-6.2f │ %-8.2f│ %-9.2f│ %-9.2f│ %-9.2f│ %-9.2f║%n",
+                    sources[i],
+                    generated[i],
+                    percentRejected,
+                    avgTimeInSystem,
+                    avgWaitTime,       // переводим в секунды
+                    avgServiceTime,    // переводим в секунды
+                    dispWait,  // D_wait - пока не трогаем
+                    dispServ  // D_serv - пока не трогаем
+            );
         }
 
-        System.out.println("╚════════════════════════════════════════════════════════════════════════════════════╝");
+        System.out.println("╚═════════════════════════════════════════════════════════════════════════════════════╝");
 
         //System.out.println("Всего обработано заявок: " + RequestTracker.getTotalProcessed());
         System.out.println("=== СИСТЕМА ЗАВЕРШИЛА РАБОТУ ===");
     }
 
-    private static class RequestStatistic {
-        int requestId;
-        String source;
-        Priority priority;
-        LocalDateTime timeCreated;
-        LocalDateTime timeInBuffer;
-        LocalDateTime timeInDevice;
-        LocalDateTime timeProcessed;
-        boolean processed = false;
-        boolean rejected = false;
 
-        RequestStatistic(int requestId, String source, Priority priority) {
-            this.requestId = requestId;
-            this.source = source;
-            this.priority = priority;
-            this.timeCreated = LocalDateTime.now();
-        }
-
-        long getTimeInSystem() {
-            if (timeProcessed != null && timeCreated != null) {
-                return Duration.between(timeCreated, timeProcessed).toMillis();
-            }
-            return 0;
-        }
-
-        long getWaitTime() {
-            if (timeInDevice != null && timeCreated != null) {
-                return Duration.between(timeCreated, timeInDevice).toMillis();
-            }
-            return 0;
-        }
-
-        long getServiceTime() {
-            if (timeProcessed != null && timeInDevice != null) {
-                return Duration.between(timeInDevice, timeProcessed).toMillis();
-            }
-            return 0;
-        }
-    }
-    @FunctionalInterface
-    private interface TimeCalculator {
-        long calculate(RequestStatistic stat);
-    }
 
 }

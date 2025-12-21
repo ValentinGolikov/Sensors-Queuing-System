@@ -17,6 +17,9 @@ public class Buffer {
     private final AtomicInteger totalRejected = new AtomicInteger(0);
     private final LimitedInteger ptr;
     private final ArrayList<Request> requests;
+    private final ArrayList<Long> reqTimeInBufferCritical = new ArrayList<>();
+    private final ArrayList<Long> reqTimeInBufferWarning = new ArrayList<>();
+    private final ArrayList<Long> reqTimeInBufferMetrics = new ArrayList<>();
     private long fullTimeInBufferCritical = Duration.ZERO.toMillis();
     private long fullTimeInBufferWarning = Duration.ZERO.toMillis();
     private long fullTimeInBufferMetrics = Duration.ZERO.toMillis();
@@ -154,9 +157,18 @@ public class Buffer {
         requests.set(current_pointer, null);
         req.setStatus(RequestStatus.PROCESSING);
         switch (req.getPriority()) {
-            case CRITICAL -> fullTimeInBufferCritical += req.getGenerationTime().getDifferenceFromNow();
-            case WARNING -> fullTimeInBufferWarning += req.getGenerationTime().getDifferenceFromNow();
-            case METRICS -> fullTimeInBufferMetrics += req.getGenerationTime().getDifferenceFromNow();
+            case CRITICAL -> {
+                reqTimeInBufferCritical.add(req.getGenerationTime().getDifferenceFromNow());
+                fullTimeInBufferCritical += req.getGenerationTime().getDifferenceFromNow();
+            }
+            case WARNING -> {
+                reqTimeInBufferWarning.add(req.getGenerationTime().getDifferenceFromNow());
+                fullTimeInBufferWarning += req.getGenerationTime().getDifferenceFromNow();
+            }
+            case METRICS -> {
+                reqTimeInBufferMetrics.add(req.getGenerationTime().getDifferenceFromNow());
+                fullTimeInBufferMetrics += req.getGenerationTime().getDifferenceFromNow();
+            }
         }
         return req;
     }
@@ -172,4 +184,8 @@ public class Buffer {
     public int getCountCritical() { return countCritical; }
     public int getCountWarning() { return countWarning; }
     public int getCountMetrics() { return countMetrics; }
+
+    public ArrayList<Long> getReqTimeInBufferCritical() { return reqTimeInBufferCritical; }
+    public ArrayList<Long> getReqTimeInBufferWarning() { return reqTimeInBufferWarning; }
+    public ArrayList<Long> getReqTimeInBufferMetrics() { return reqTimeInBufferMetrics; }
 }
