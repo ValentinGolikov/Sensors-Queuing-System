@@ -331,7 +331,7 @@ public class Engine {
         System.out.println("╠═════════════════════════════════════════════════╣");
 
         String[] devices = {"Device1 ", "Device2 ", "Device3 "};
-
+        double avgUsage = 0.0;
         for (int i = 0; i < devices.length; i++) {
             Random random = new Random();
             int processed = (requestsGenerator.getTotalGenerated() - buffer.getTotalRejected())/3 - random.nextInt(3);
@@ -342,8 +342,10 @@ public class Engine {
                     (int) busyTime,
                     busyTime/TIMEOUT*100
             );
+            avgUsage += busyTime/TIMEOUT*100;
         }
         System.out.println("╚═════════════════════════════════════════════════╝");
+        System.out.printf("Average usage of Devices: %.0f%%\n", avgUsage/3);
 
         System.out.println("=== СИСТЕМА ЗАВЕРШИЛА РАБОТУ ===");
     }

@@ -117,7 +117,7 @@ public class Device implements Runnable {
         saveToDatabase(request);
 
         //System.out.println(threadName + ": sleeping for " + (long) Math.exp((double)getProcessedCount()/1000));
-        Thread.sleep((long) Math.exp((double) getProcessedCount()));
+        Thread.sleep((long) Math.exp((double) getProcessedCount()/100));
     }
 
     public void handleWarningRequest(Request request) throws InterruptedException {
@@ -133,7 +133,7 @@ public class Device implements Runnable {
         // Сохранение в базу данных
         saveToDatabase(request);
         //System.out.println(threadName + ": sleeping for " + (long) Math.exp((double)getProcessedCount()/1000));
-        Thread.sleep((long) Math.exp((double) getProcessedCount()));
+        Thread.sleep((long) Math.exp((double) getProcessedCount()/100));
     }
 
     public void handleMetricsRequest(Request request) throws InterruptedException {
@@ -144,7 +144,7 @@ public class Device implements Runnable {
         // Сохранение данных метрик в базу данных
         saveMetricsToDatabase(request);
         //System.out.println(threadName + ": sleeping for " + (long) Math.exp((double)getProcessedCount()/1000));
-        Thread.sleep((long) Math.exp((double) getProcessedCount()));
+        Thread.sleep((long) Math.exp((double) getProcessedCount()/100));
     }
 
     // Добавление заявки в очередь обработки
