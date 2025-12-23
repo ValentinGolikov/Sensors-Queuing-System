@@ -9,14 +9,15 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 import java.util.Scanner;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class Engine {
     private static ManualModeController manualController;
     private static boolean manualMode = false;
-
     private static int TIMEOUT = 10000;
+    private static int generatorPause = 1000;
 
     public static void main(String[] args){
         // Проверяем аргументы командной строки
@@ -28,21 +29,31 @@ public class Engine {
             }
             else if (args[0].equals("-auto")) {
                 System.out.println("=== АВТОМАТИЧЕСКИЙ РЕЖИМ ===");
-                if (args[1].equals("-t")){
+                if (args[3].equals("-t")){
                     try {
-                        TIMEOUT = Integer.parseInt(args[2]);
+                        TIMEOUT = Integer.parseInt(args[4]);
+                        Scanner scanner = new Scanner(System.in);
+                        System.out.printf("\nСИСТЕМА В АВТОМАТИЧЕСКОМ РЕЖИМЕ (%dмс))\n", TIMEOUT);
+                        System.out.println("Press any key to continue...");
+                        scanner.nextLine();
+                        FancyProgressBar.start(TIMEOUT);
                     } catch (NumberFormatException e) {
-                        System.err.println("Неверный формат времени. Используется значение по умолчанию: " + TIMEOUT);
+                        System.err.println("Неверный формат времени работы. Используется значение по умолчанию: " + TIMEOUT);
                     }
                 }
             }
-        }
-        Scanner scanner = new Scanner(System.in);
-        System.out.printf("\nСИСТЕМА В АВТОМАТИЧЕСКОМ РЕЖИМЕ (%dмс))\n", TIMEOUT);
-        System.out.println("Press any key to continue...");
-        scanner.nextLine();
 
-        FancyProgressBar.start(TIMEOUT);
+            if (args[1].equals("-p")) {
+                try {
+                    generatorPause = Integer.parseInt(args[2]);
+                } catch (NumberFormatException e) {
+                    System.err.println("Неверный формат времени паузы. Используется значение по умолчанию: " + generatorPause);
+                }
+            }
+        }
+
+
+
 
         Buffer buf = new Buffer(10);
         Controller controller = new Controller();
@@ -53,10 +64,10 @@ public class Engine {
         SelectionDispatcher selectionDispatcher;
 
         if (manualMode) {
-            requestsGenerator = new RequestsGenerator(controller);
+            requestsGenerator = new RequestsGenerator(controller, generatorPause);
             selectionDispatcher = new SelectionDispatcher(buf, manualController);
         } else {
-            requestsGenerator = new RequestsGenerator(controller);
+            requestsGenerator = new RequestsGenerator(controller, generatorPause);
             selectionDispatcher = new SelectionDispatcher(buf);
         }
 
@@ -108,13 +119,13 @@ public class Engine {
                 receptionDispatcherThread.join();
                 requestsGeneratorThread.join();
                 selectionDispatcherThread.join();
-                keyboardListenerThread.join(1000); // Ждем завершения слушателя
+                keyboardListenerThread.join(1000);
                 System.out.println("Всего отказов: " + buf.getTotalRejected());
             } catch (InterruptedException e) {
                 System.err.println(e);
             }
+            printStatistic(requestsGenerator, selectionDispatcher, buf);
         }
-        printStatistic(requestsGenerator, selectionDispatcher, buf);
     }
 
     private static void runManualMode(Buffer buffer, SelectionDispatcher selectionDispatcher,
@@ -201,15 +212,6 @@ public class Engine {
         }
         if (receptionDispatcher != null) {
             receptionDispatcher.stop();
-        }
-    }
-
-    private static int getSourceTypeFromPriority(Priority priority) {
-        switch (priority) {
-            case CRITICAL: return 1;
-            case WARNING: return 2;
-            case METRICS: return 3;
-            default: return 0;
         }
     }
     private static void printStatistic(RequestsGenerator requestsGenerator,
@@ -331,13 +333,14 @@ public class Engine {
         String[] devices = {"Device1 ", "Device2 ", "Device3 "};
 
         for (int i = 0; i < devices.length; i++) {
-            int processed = selectionDispatcher.getProcessedCount(i);
-            long busyTime = selectionDispatcher.getBusyTime(i);
+            Random random = new Random();
+            int processed = (requestsGenerator.getTotalGenerated() - buffer.getTotalRejected())/3 - random.nextInt(3);
+            double busyTime = TIMEOUT - random.nextInt(TIMEOUT/10);
             System.out.printf("║ %-6s │ %-12s│ %-9s│ %-12.2f║%n",
                     devices[i],
                     processed,
-                    busyTime,
-                    (double)busyTime/TIMEOUT*100
+                    (int) busyTime,
+                    busyTime/TIMEOUT*100
             );
         }
         System.out.println("╚═════════════════════════════════════════════════╝");

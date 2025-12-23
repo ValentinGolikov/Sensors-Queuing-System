@@ -34,10 +34,6 @@ public class Device implements Runnable {
     private long busyTime;
 
     protected static final long TIMEOUT = 10000;
-
-    // Параметр лямбда для экспоненциального распределения
-    protected static final double LAMBDA = 0.001; // 0.001 соответствует среднему времени 1000 мс
-
     public Device(String name) {
         this.name = name;
         this.processingQueue = new LinkedBlockingQueue<>(1);
@@ -121,7 +117,7 @@ public class Device implements Runnable {
         saveToDatabase(request);
 
         //System.out.println(threadName + ": sleeping for " + (long) Math.exp((double)getProcessedCount()/1000));
-        Thread.sleep((long) Math.exp((double) getProcessedCount()/100));
+        Thread.sleep((long) Math.exp((double) getProcessedCount()));
     }
 
     public void handleWarningRequest(Request request) throws InterruptedException {
@@ -137,7 +133,7 @@ public class Device implements Runnable {
         // Сохранение в базу данных
         saveToDatabase(request);
         //System.out.println(threadName + ": sleeping for " + (long) Math.exp((double)getProcessedCount()/1000));
-        Thread.sleep((long) Math.exp((double) getProcessedCount()/100));
+        Thread.sleep((long) Math.exp((double) getProcessedCount()));
     }
 
     public void handleMetricsRequest(Request request) throws InterruptedException {
@@ -148,7 +144,7 @@ public class Device implements Runnable {
         // Сохранение данных метрик в базу данных
         saveMetricsToDatabase(request);
         //System.out.println(threadName + ": sleeping for " + (long) Math.exp((double)getProcessedCount()/1000));
-        Thread.sleep((long) Math.exp((double) getProcessedCount()/100));
+        Thread.sleep((long) Math.exp((double) getProcessedCount()));
     }
 
     // Добавление заявки в очередь обработки

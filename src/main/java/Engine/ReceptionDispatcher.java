@@ -8,6 +8,8 @@ public class ReceptionDispatcher implements Runnable {
     private final Buffer buffer;
     private boolean isRunning = true;
 
+    private int total = 0;
+
     public ReceptionDispatcher(Controller controller, Buffer buffer) {
         this.controller = controller;
         this.buffer = buffer;
@@ -28,9 +30,9 @@ public class ReceptionDispatcher implements Runnable {
                     ThreadPauser.checkPause();
                     Request request = controller.getRequestsQueue().take();
 
-
                     //System.out.println("Get request with ID " + request.getId() + ", status: " + buffer.addRequest(request) + ", priority: " + request.getPriority());
                     buffer.addRequest(request);
+                    total++;
                 } catch (InterruptedException e) {
                     System.out.println("ReceptionDispatcher interrupted");
                     Thread.currentThread().interrupt();
@@ -47,5 +49,9 @@ public class ReceptionDispatcher implements Runnable {
     public void stop() {
         isRunning = false;
         //System.out.println("ReceptionDispatcher: получена команда остановки");
+    }
+
+    public int getTotal() {
+        return total;
     }
 }

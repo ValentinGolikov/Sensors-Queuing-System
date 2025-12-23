@@ -21,6 +21,8 @@ public class SelectionDispatcher implements Runnable {
     private Thread device2Thread;
     private Thread device3Thread;
 
+    private int total = 0;
+
     public SelectionDispatcher(Buffer buffer) {
         this(buffer, null);
         // Создаем приборы
@@ -64,6 +66,7 @@ public class SelectionDispatcher implements Runnable {
                 ThreadPauser.checkPause();
                 Request request = buffer.getNextRequest(running);
                 if (request != null) {
+                    total++;
                     dispatchRequest(request);
                 }
             } catch (InterruptedException e) {
@@ -188,6 +191,9 @@ public class SelectionDispatcher implements Runnable {
         }
     }
 
+    public int getTotal() {
+        return total;
+    }
 
     public void stop() {
         running.set(false);

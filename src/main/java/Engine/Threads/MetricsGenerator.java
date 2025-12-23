@@ -13,12 +13,18 @@ public class MetricsGenerator implements Runnable {
     private final Controller controller;
     private final AtomicInteger totalGenerated;
     private final AtomicInteger metricsGenerated;
+    private final int timeToPause;
 
-    public MetricsGenerator (AtomicBoolean running, Controller controller, AtomicInteger totalGenerated, AtomicInteger metricsGenerated) {
+    public MetricsGenerator (AtomicBoolean running,
+                             Controller controller,
+                             AtomicInteger totalGenerated,
+                             AtomicInteger metricsGenerated,
+                             int time) {
         this.running = running;
         this.controller = controller;
         this.totalGenerated = totalGenerated;
         this.metricsGenerated = metricsGenerated;
+        this.timeToPause = time;
     }
 
     @Override
@@ -28,7 +34,7 @@ public class MetricsGenerator implements Runnable {
         while (running.get()) {
             try {
                 ThreadPauser.checkPause();
-                Thread.sleep(10);
+                Thread.sleep(timeToPause);
 
                 controller.submitDataPack(DataPack.createNormalScenario(
                         DataPack.getRandomElement(TRAINS),

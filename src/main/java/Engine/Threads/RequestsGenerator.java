@@ -14,22 +14,23 @@ public class RequestsGenerator implements Runnable {
     private static final AtomicBoolean running = new AtomicBoolean(true);
     private final Controller controller;
     private static boolean stopFlag = false;
-
+    private final int timeToPause;
     private Thread criticalThread;
     private Thread warningThread;
     private Thread metricsThread;
 
-    public RequestsGenerator(Controller controller) {
+    public RequestsGenerator(Controller controller, int time) {
         this.controller = controller;
+        this.timeToPause = time;
     }
 
     @Override
     public void run() {
         //System.out.println("=== ЗАПУСК ГЕНЕРАТОРА ЗАЯВОК ===");
 
-        criticalThread = new Thread(new CriticalGenerator(running, controller, totalGenerated, criticalGenerated), "Critical-Generator");
-        warningThread = new Thread(new WarningGenerator(running, controller, totalGenerated, warningGenerated), "Warning-Generator");
-        metricsThread = new Thread(new MetricsGenerator(running, controller, totalGenerated, metricsGenerated), "Metrics-Generator");
+        criticalThread = new Thread(new CriticalGenerator(running, controller, totalGenerated, criticalGenerated, timeToPause), "Critical-Generator");
+        warningThread = new Thread(new WarningGenerator(running, controller, totalGenerated, warningGenerated, timeToPause), "Warning-Generator");
+        metricsThread = new Thread(new MetricsGenerator(running, controller, totalGenerated, metricsGenerated, timeToPause), "Metrics-Generator");
 
         metricsThread.start();
         warningThread.start();

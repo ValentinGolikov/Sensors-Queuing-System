@@ -13,12 +13,18 @@ public class CriticalGenerator implements Runnable {
     private final Controller controller;
     private final AtomicInteger totalGenerated;
     private final AtomicInteger criticalGenerated;
+    private final int timeToPause;
 
-    public CriticalGenerator (AtomicBoolean running, Controller controller, AtomicInteger totalGenerated, AtomicInteger criticalGenerated) {
+    public CriticalGenerator (AtomicBoolean running,
+                              Controller controller,
+                              AtomicInteger totalGenerated,
+                              AtomicInteger criticalGenerated,
+                              int time) {
         this.running = running;
         this.controller = controller;
         this.totalGenerated = totalGenerated;
         this.criticalGenerated = criticalGenerated;
+        this.timeToPause = time*10;
     }
 
     @Override
@@ -28,7 +34,7 @@ public class CriticalGenerator implements Runnable {
         while (running.get()) {
             try {
                 ThreadPauser.checkPause();
-                Thread.sleep(100);
+                Thread.sleep(timeToPause);
 
                 controller.submitDataPack(DataPack.createCriticalScenario(
                         DataPack.getRandomElement(TRAINS),

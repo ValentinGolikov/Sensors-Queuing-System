@@ -11,6 +11,8 @@ public class Controller implements Runnable {
     private final BlockingQueue<Request> requestsQueue = new LinkedBlockingQueue<>();
     private volatile boolean isRunning = true;
 
+    private int total = 0;
+
     /**
      * Метод для приема DataPack от потоков-генераторов
      */
@@ -41,6 +43,7 @@ public class Controller implements Runnable {
                     Request request = convertToRequest(dataPack);
 
                     requestsQueue.put(request);
+                    total++;
                     }
 
                 } catch (InterruptedException e) {
@@ -52,8 +55,6 @@ public class Controller implements Runnable {
                 }
             }
         }
-
-        //System.out.println("Controller stopped");
     }
 
     /**
@@ -97,5 +98,9 @@ public class Controller implements Runnable {
     public void stop() {
         isRunning = false;
         //System.out.println("Controller: получена команда остановки");
+    }
+
+    public  int getTotal() {
+        return total;
     }
 }

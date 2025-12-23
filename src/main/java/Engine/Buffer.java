@@ -1,9 +1,7 @@
 package Engine;
 
-import Engine.Threads.RequestsGenerator;
 import Engine.Tracking.RequestTracker;
 
-import javax.swing.*;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -27,6 +25,9 @@ public class Buffer {
     private int countCritical = 0;
     private int countWarning = 0;
     private int countMetrics = 0;
+
+    private int total = 0;
+    private int reject = 0;
 
     private boolean hasSpace(){
         for (Request request : requests) {
@@ -80,10 +81,11 @@ public class Buffer {
         return ptr;
     }
 
-    public RequestStatus addRequest(Request request) {
+    public void addRequest(Request request) {
         if (!hasSpace()) {
             //System.out.println("===================INIT REJECTION=================== " + requests.get(ptr.getValue()).getPriority() + " " + requests.get(ptr.getValue()).getId());
             requests.get(ptr.getValue()).setStatus(RequestStatus.REJECTED);
+            reject++;
 
             Priority priority = requests.get(ptr.getValue()).getPriority();
             switch (priority) {
@@ -96,6 +98,7 @@ public class Buffer {
             RequestTracker.trackInBuffer(request);
             request.setStatus(RequestStatus.IN_BUFFER);
             requests.set(ptr.getValue(), request);
+            total++;
             switch (request.getPriority()){
                 case CRITICAL -> countCritical++;
                 case WARNING -> countWarning++;
@@ -108,6 +111,7 @@ public class Buffer {
                 RequestTracker.trackInBuffer(request);
                 request.setStatus(RequestStatus.IN_BUFFER);
                 requests.set(ptr.getValue(), request);
+                total++;
                 switch (request.getPriority()){
                     case CRITICAL -> countCritical++;
                     case WARNING -> countWarning++;
@@ -118,8 +122,6 @@ public class Buffer {
                 this.ptr.increment();
             }
         }
-        return RequestStatus.IN_BUFFER;
-
     }
 
     public Request getNextRequest(AtomicBoolean running) {
@@ -187,4 +189,12 @@ public class Buffer {
     public ArrayList<Long> getReqTimeInBufferCritical() { return reqTimeInBufferCritical; }
     public ArrayList<Long> getReqTimeInBufferWarning() { return reqTimeInBufferWarning; }
     public ArrayList<Long> getReqTimeInBufferMetrics() { return reqTimeInBufferMetrics; }
+
+    public int getTotal() {
+        return total;
+    }
+
+    public int getReject() {
+        return reject;
+    }
 }
