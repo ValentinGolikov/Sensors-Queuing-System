@@ -4,9 +4,7 @@ import Engine.Threads.ThreadPauser;
 import Engine.Tracking.RequestTracker;
 
 import java.time.Duration;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -30,17 +28,19 @@ public class Device implements Runnable {
     private final ArrayList<Long> reqTimeOnDeviceWarning = new ArrayList<>();
     private final ArrayList<Long> reqTimeOnDeviceMetrics = new ArrayList<>();
     private DateTime timeStart;
+    private final int devicePause;
 
     private long busyTime;
 
     protected static final long TIMEOUT = 10000;
-    public Device(String name) {
+    public Device(String name, int devicePause) {
         this.name = name;
         this.processingQueue = new LinkedBlockingQueue<>(1);
         this.running = new AtomicBoolean(true);
         this.processedCount = new AtomicInteger(0);
         this.isBusy = new AtomicBoolean(false);
         this.random = new Random();
+        this.devicePause = devicePause;
     }
 
     @Override
@@ -117,7 +117,7 @@ public class Device implements Runnable {
         saveToDatabase(request);
 
         //System.out.println(threadName + ": sleeping for " + (long) Math.exp((double)getProcessedCount()/1000));
-        Thread.sleep((long) Math.exp((double) getProcessedCount()/100));
+        Thread.sleep((long) Math.exp((double) getProcessedCount()/devicePause));
     }
 
     public void handleWarningRequest(Request request) throws InterruptedException {
@@ -133,7 +133,7 @@ public class Device implements Runnable {
         // Сохранение в базу данных
         saveToDatabase(request);
         //System.out.println(threadName + ": sleeping for " + (long) Math.exp((double)getProcessedCount()/1000));
-        Thread.sleep((long) Math.exp((double) getProcessedCount()/100));
+        Thread.sleep((long) Math.exp((double) getProcessedCount()/devicePause));
     }
 
     public void handleMetricsRequest(Request request) throws InterruptedException {
@@ -144,7 +144,7 @@ public class Device implements Runnable {
         // Сохранение данных метрик в базу данных
         saveMetricsToDatabase(request);
         //System.out.println(threadName + ": sleeping for " + (long) Math.exp((double)getProcessedCount()/1000));
-        Thread.sleep((long) Math.exp((double) getProcessedCount()/100));
+        Thread.sleep((long) Math.exp((double) getProcessedCount()/devicePause));
     }
 
     // Добавление заявки в очередь обработки

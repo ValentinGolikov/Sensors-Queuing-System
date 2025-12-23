@@ -3,12 +3,7 @@ package Engine;
 import Engine.Threads.RequestsGenerator;
 import Engine.Threads.ThreadPauser;
 import Engine.Tracking.ManualModeController;
-import Engine.Tracking.RequestTracker;
 
-import java.time.Duration;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Random;
 import java.util.Scanner;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -18,6 +13,9 @@ public class Engine {
     private static boolean manualMode = false;
     private static int TIMEOUT = 10000;
     private static int generatorPause = 1000;
+    private static int devicePause = 1000;
+
+    private static int SIZE = 10;
 
     public static void main(String[] args){
         // Проверяем аргументы командной строки
@@ -29,9 +27,9 @@ public class Engine {
             }
             else if (args[0].equals("-auto")) {
                 System.out.println("=== АВТОМАТИЧЕСКИЙ РЕЖИМ ===");
-                if (args[3].equals("-t")){
+                if (args[7].equals("-t")){
                     try {
-                        TIMEOUT = Integer.parseInt(args[4]);
+                        TIMEOUT = Integer.parseInt(args[8]);
                         Scanner scanner = new Scanner(System.in);
                         System.out.printf("\nСИСТЕМА В АВТОМАТИЧЕСКОМ РЕЖИМЕ (%dмс))\n", TIMEOUT);
                         System.out.println("Press any key to continue...");
@@ -50,12 +48,26 @@ public class Engine {
                     System.err.println("Неверный формат времени паузы. Используется значение по умолчанию: " + generatorPause);
                 }
             }
+            if (args[3].equals("-b")) {
+                try {
+                    SIZE = Integer.parseInt(args[4]);
+                } catch (NumberFormatException e) {
+                    System.err.println("Неверный формат времени паузы. Используется значение по умолчанию: " + SIZE);
+                }
+            }
+            if (args[5].equals("-d")) {
+                try {
+                    devicePause = Integer.parseInt(args[6]);
+                } catch (NumberFormatException e) {
+                    System.err.println("Неверный формат времени паузы. Используется значение по умолчанию: " + devicePause);
+                }
+            }
         }
 
 
 
 
-        Buffer buf = new Buffer(10);
+        Buffer buf = new Buffer(SIZE);
         Controller controller = new Controller();
 
 
@@ -65,10 +77,10 @@ public class Engine {
 
         if (manualMode) {
             requestsGenerator = new RequestsGenerator(controller, generatorPause);
-            selectionDispatcher = new SelectionDispatcher(buf, manualController);
+            selectionDispatcher = new SelectionDispatcher(buf, manualController, devicePause);
         } else {
             requestsGenerator = new RequestsGenerator(controller, generatorPause);
-            selectionDispatcher = new SelectionDispatcher(buf);
+            selectionDispatcher = new SelectionDispatcher(buf, devicePause);
         }
 
         ReceptionDispatcher receptionDispatcher = new ReceptionDispatcher(controller, buf);

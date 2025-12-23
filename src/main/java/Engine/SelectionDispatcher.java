@@ -23,12 +23,12 @@ public class SelectionDispatcher implements Runnable {
 
     private int total = 0;
 
-    public SelectionDispatcher(Buffer buffer) {
-        this(buffer, null);
+    public SelectionDispatcher(Buffer buffer, int devicePause) {
+        this(buffer, null, devicePause);
         // Создаем приборы
-        this.device1 = new Device("Device1");
-        this.device2 = new Device("Device2");
-        this.device3 = new Device("Device3");
+        this.device1 = new Device("Device1", devicePause);
+        this.device2 = new Device("Device2", devicePause);
+        this.device3 = new Device("Device3", devicePause);
 
         // Запускаем потоки приборов
         this.device1Thread = new Thread(device1, "Device1-Thread");
@@ -36,15 +36,15 @@ public class SelectionDispatcher implements Runnable {
         this.device3Thread = new Thread(device3, "Device3-Thread");
     }
 
-    public SelectionDispatcher(Buffer buffer, ManualModeController manualController) {
+    public SelectionDispatcher(Buffer buffer, ManualModeController manualController, int devicePause) {
         this.buffer = buffer;
         this.manualController = manualController;
         this.running = new AtomicBoolean(true);
 
         // Создаем приборы
-        this.device1 = new Device("Device1");
-        this.device2 = new Device("Device2");
-        this.device3 = new Device("Device3");
+        this.device1 = new Device("Device1", devicePause);
+        this.device2 = new Device("Device2", devicePause);
+        this.device3 = new Device("Device3", devicePause);
 
         // Запускаем потоки приборов
         this.device1Thread = new Thread(device1, "Device1-Thread");
