@@ -19,7 +19,3 @@ https://disk.yandex.ru/d/G8AGjE_7NAOf0Q
 #### Flowchart:
 ![Image alt](https://github.com/ValentinGolikov/Sensors-Queuing-System/blob/main/flowchart.png)
 
-3. **Написание программы**
-
-... in progress ...
-  
