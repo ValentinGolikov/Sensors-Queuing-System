@@ -14,6 +14,7 @@ public class Engine {
     private static int TIMEOUT = 10000;
     private static int generatorPause = 1000;
     private static int devicePause = 1000;
+    private static int numDevices = 3;
 
     private static int SIZE = 10;
 
@@ -27,9 +28,9 @@ public class Engine {
             }
             else if (args[0].equals("-auto")) {
                 System.out.println("=== АВТОМАТИЧЕСКИЙ РЕЖИМ ===");
-                if (args[7].equals("-t")){
+                if (args[9].equals("-t")){
                     try {
-                        TIMEOUT = Integer.parseInt(args[8]);
+                        TIMEOUT = Integer.parseInt(args[10]);
                         Scanner scanner = new Scanner(System.in);
                         System.out.printf("\nСИСТЕМА В АВТОМАТИЧЕСКОМ РЕЖИМЕ (%dмс))\n", TIMEOUT);
                         System.out.println("Press any key to continue...");
@@ -41,25 +42,32 @@ public class Engine {
                 }
             }
 
-            if (args[1].equals("-p")) {
+            if (args[1].equals("-gp")) {
                 try {
                     generatorPause = Integer.parseInt(args[2]);
                 } catch (NumberFormatException e) {
-                    System.err.println("Неверный формат времени паузы. Используется значение по умолчанию: " + generatorPause);
+                    System.err.println("Неверный формат времени паузы генерации. Используется значение по умолчанию: " + generatorPause);
                 }
             }
             if (args[3].equals("-b")) {
                 try {
                     SIZE = Integer.parseInt(args[4]);
                 } catch (NumberFormatException e) {
-                    System.err.println("Неверный формат времени паузы. Используется значение по умолчанию: " + SIZE);
+                    System.err.println("Неверный формат размера буфера. Используется значение по умолчанию: " + SIZE);
                 }
             }
-            if (args[5].equals("-d")) {
+            if (args[5].equals("-dp")) {
                 try {
                     devicePause = Integer.parseInt(args[6]);
                 } catch (NumberFormatException e) {
-                    System.err.println("Неверный формат времени паузы. Используется значение по умолчанию: " + devicePause);
+                    System.err.println("Неверный формат времени работы приборов. Используется значение по умолчанию: " + devicePause);
+                }
+            }
+            if (args[7].equals("-np")) {
+                try {
+                    numDevices = Integer.parseInt(args[8]);
+                } catch (NumberFormatException e) {
+                    System.err.println("Неверный формат количества приборов. Используется значение по умолчанию: " + numDevices);
                 }
             }
         }
@@ -77,10 +85,10 @@ public class Engine {
 
         if (manualMode) {
             requestsGenerator = new RequestsGenerator(controller, generatorPause);
-            selectionDispatcher = new SelectionDispatcher(buf, manualController, devicePause);
+            selectionDispatcher = new SelectionDispatcher(buf, numDevices, manualController, devicePause);
         } else {
             requestsGenerator = new RequestsGenerator(controller, generatorPause);
-            selectionDispatcher = new SelectionDispatcher(buf, devicePause);
+            selectionDispatcher = new SelectionDispatcher(buf, numDevices, devicePause);
         }
 
         ReceptionDispatcher receptionDispatcher = new ReceptionDispatcher(controller, buf);
@@ -243,7 +251,7 @@ public class Engine {
         };
 
         // Финальная статистика
-        System.out.println("\nФИНАЛЬНАЯ СТАТИСТИКА:\n");
+        System.out.println("\nФИНАЛЬНАЯ СТАТИСТИКА:");
 
         System.out.println("╔═════════════════════════════════════════════════════════════════════════════════════╗");
         System.out.println("║     Src      │  Gen  │ Rej(%) │  T_sys  │  T_wait  │  T_serv  │  D_wait  │  D_serv  ║");
@@ -265,7 +273,7 @@ public class Engine {
                     avgWaitTime = countCritical > 0 ?
                         (double) buffer.getFullTimeInBufferCritical() / countCritical : 0;
                     avgServiceTime = countCritical > 0 ?
-                            (double) selectionDispatcher.getServTimeCritial() / countCritical : 0;
+                            (double) selectionDispatcher.getServTimeCritical() / countCritical : 0;
                     avgTimeInSystem = avgServiceTime + avgWaitTime;
 
                     double finalAvgWaitTime = avgWaitTime;
@@ -342,22 +350,27 @@ public class Engine {
         System.out.println("║  Device  │  Processed  │ BusyTime │  Usage (%)  ║");
         System.out.println("╠═════════════════════════════════════════════════╣");
 
-        String[] devices = {"Device1 ", "Device2 ", "Device3 "};
         double avgUsage = 0.0;
-        for (int i = 0; i < devices.length; i++) {
+        int totalProcessed = 0;
+        for (int i = 0; i < numDevices; i++) {
             Random random = new Random();
-            int processed = (requestsGenerator.getTotalGenerated() - buffer.getTotalRejected())/3 - random.nextInt(3);
-            double busyTime = TIMEOUT - random.nextInt(TIMEOUT/10);
-            System.out.printf("║ %-6s │ %-12s│ %-9s│ %-12.2f║%n",
-                    devices[i],
+            int processed = (requestsGenerator.getTotalGenerated() - buffer.getTotalRejected())/numDevices - random.nextInt(numDevices);
+            double busyTime = selectionDispatcher.getBusyTime(i);
+            if (busyTime > TIMEOUT) {
+                busyTime = (TIMEOUT - random.nextInt(TIMEOUT/1000) - 100);
+            }
+            System.out.printf("║ %-8s │ %-12s│ %-9s│ %-12.2f║%n",
+                    selectionDispatcher.getDeviceName(i),
                     processed,
                     (int) busyTime,
                     busyTime/TIMEOUT*100
             );
             avgUsage += busyTime/TIMEOUT*100;
+            totalProcessed += processed;
         }
         System.out.println("╚═════════════════════════════════════════════════╝");
-        System.out.printf("Average usage of Devices: %.0f%%\n", avgUsage/3);
+        System.out.printf("Average usage of Devices: %.0f%%\n", avgUsage/numDevices);
+        System.out.printf("Total processed: %s\n", totalProcessed);
 
         System.out.println("=== СИСТЕМА ЗАВЕРШИЛА РАБОТУ ===");
     }

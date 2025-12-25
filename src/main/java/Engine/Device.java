@@ -49,7 +49,7 @@ public class Device implements Runnable {
 
         while (running.get() || !processingQueue.isEmpty()) {
             try {
-                ThreadPauser.checkPause();
+                //ThreadPauser.checkPause();
                 Request request = processingQueue.poll(TIMEOUT, TimeUnit.MILLISECONDS);
                 timeStart = new DateTime();
                 if (request != null) processRequest(request);
@@ -97,7 +97,7 @@ public class Device implements Runnable {
             System.err.println(e);
         } finally {
             isBusy.set(false);
-            busyTime += startPoint.getDifferenceFromNow();
+            busyTime += startPoint.getDifferenceFromNow() + 10;
         }
     }
 
@@ -118,6 +118,7 @@ public class Device implements Runnable {
 
         //System.out.println(threadName + ": sleeping for " + (long) Math.exp((double)getProcessedCount()/1000));
         Thread.sleep((long) Math.exp((double) getProcessedCount()/devicePause));
+        //Thread.sleep(devicePause + 100);
     }
 
     public void handleWarningRequest(Request request) throws InterruptedException {
@@ -134,6 +135,7 @@ public class Device implements Runnable {
         saveToDatabase(request);
         //System.out.println(threadName + ": sleeping for " + (long) Math.exp((double)getProcessedCount()/1000));
         Thread.sleep((long) Math.exp((double) getProcessedCount()/devicePause));
+        //Thread.sleep(devicePause + 100);
     }
 
     public void handleMetricsRequest(Request request) throws InterruptedException {
@@ -145,6 +147,7 @@ public class Device implements Runnable {
         saveMetricsToDatabase(request);
         //System.out.println(threadName + ": sleeping for " + (long) Math.exp((double)getProcessedCount()/1000));
         Thread.sleep((long) Math.exp((double) getProcessedCount()/devicePause));
+        //Thread.sleep(devicePause + 100);
     }
 
     // Добавление заявки в очередь обработки

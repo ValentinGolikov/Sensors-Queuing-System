@@ -62,9 +62,9 @@ public class ManualModeController {
         System.out.println("╠══════════════════════════════════════════════════════════════╣");
 
         // Здесь нужно добавить методы для получения состояния приборов из SelectionDispatcher
-        displayDeviceState("Device1", dispatcher.getDevice1ProcessedCount(), dispatcher.getDevice1CurrentRequest());
-        displayDeviceState("Device2", dispatcher.getDevice2ProcessedCount(), dispatcher.getDevice2CurrentRequest());
-        displayDeviceState("Device3", dispatcher.getDevice3ProcessedCount(), dispatcher.getDevice3CurrentRequest());
+        displayDeviceState("Device1", dispatcher.getDeviceProcessedCount(1), dispatcher.getDeviceCurrentRequest(1));
+        displayDeviceState("Device2", dispatcher.getDeviceProcessedCount(2), dispatcher.getDeviceCurrentRequest(2));
+        displayDeviceState("Device3", dispatcher.getDeviceProcessedCount(3), dispatcher.getDeviceCurrentRequest(3));
 
         System.out.println("╚══════════════════════════════════════════════════════════════╝");
     }

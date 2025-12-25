@@ -3,70 +3,64 @@ package Engine;
 import Engine.Threads.ThreadPauser;
 import Engine.Tracking.ManualModeController;
 
-import java.lang.reflect.Array;
+import javax.xml.crypto.Data;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 
 public class SelectionDispatcher implements Runnable {
     private final Buffer buffer;
     private final ManualModeController manualController;
-    private Device device1;
-    private Device device2;
-    private Device device3;
+    private final List<Device> devices;
+    private final List<Thread> deviceThreads;
     private final AtomicBoolean running;
-    private final LimitedInteger pointer = new LimitedInteger(2);
+    private final LimitedInteger pointer;
 
-    private Thread device1Thread;
-    private Thread device2Thread;
-    private Thread device3Thread;
+    private long pause;
 
     private int total = 0;
 
-    public SelectionDispatcher(Buffer buffer, int devicePause) {
-        this(buffer, null, devicePause);
-        // Создаем приборы
-        this.device1 = new Device("Device1", devicePause);
-        this.device2 = new Device("Device2", devicePause);
-        this.device3 = new Device("Device3", devicePause);
-
-        // Запускаем потоки приборов
-        this.device1Thread = new Thread(device1, "Device1-Thread");
-        this.device2Thread = new Thread(device2, "Device2-Thread");
-        this.device3Thread = new Thread(device3, "Device3-Thread");
+    // Конструктор с динамическим количеством устройств
+    public SelectionDispatcher(Buffer buffer, int deviceCount, int devicePause) {
+        this(buffer, deviceCount, null, devicePause);
     }
 
-    public SelectionDispatcher(Buffer buffer, ManualModeController manualController, int devicePause) {
+    public SelectionDispatcher(Buffer buffer, int deviceCount, ManualModeController manualController, int devicePause) {
         this.buffer = buffer;
         this.manualController = manualController;
         this.running = new AtomicBoolean(true);
 
-        // Создаем приборы
-        this.device1 = new Device("Device1", devicePause);
-        this.device2 = new Device("Device2", devicePause);
-        this.device3 = new Device("Device3", devicePause);
+        // Создаем приборы (количество определяется параметром deviceCount)
+        this.devices = new ArrayList<>(deviceCount);
+        this.deviceThreads = new ArrayList<>(deviceCount);
+        this.pointer = new LimitedInteger(deviceCount - 1); // Устанавливаем максимальное значение
 
-        // Запускаем потоки приборов
-        this.device1Thread = new Thread(device1, "Device1-Thread");
-        this.device2Thread = new Thread(device2, "Device2-Thread");
-        this.device3Thread = new Thread(device3, "Device3-Thread");
+        // Создаем указанное количество устройств
+        for (int i = 0; i < deviceCount; i++) {
+            String deviceName = "Device" + (i + 1);
+            Device device = new Device(deviceName, devicePause);
+            devices.add(device);
+
+            Thread deviceThread = new Thread(device, deviceName + "-Thread");
+            deviceThreads.add(deviceThread);
+        }
     }
 
     @Override
     public void run() {
-        //System.out.println("SelectionDispatcher запущен");
+        //System.out.println("SelectionDispatcher запущен. Количество устройств: " + devices.size());
 
-        // Запускаем все приборы
-        device1Thread.start();
-        device2Thread.start();
-        device3Thread.start();
+        // Запускаем все потоки приборов
+        for (Thread thread : deviceThreads) {
+            thread.start();
+        }
 
         while (running.get()) {
             try {
                 ThreadPauser.checkPause();
                 Request request = buffer.getNextRequest(running);
                 if (request != null) {
-                    total++;
+                    //total++;
                     dispatchRequest(request);
                 }
             } catch (InterruptedException e) {
@@ -76,119 +70,110 @@ public class SelectionDispatcher implements Runnable {
             }
         }
 
-        // Останавливаем приборы
-        device1.stop();
-        device2.stop();
-        device3.stop();
+        // Останавливаем все приборы
+        for (Device device : devices) {
+            device.stop();
+        }
 
         //System.out.println("SelectionDispatcher завершен");
     }
 
     private void dispatchRequest(Request request) throws InterruptedException {
-        Priority priority = request.getPriority();
-        Device selectedDevice = selectDevice(priority);
+        DateTime start = new DateTime();
+        Device selectedDevice = selectDevice();
+        pause += start.getDifferenceFromNow();
+        total++;
 
-        if (selectedDevice != null) {
-            selectedDevice.submitRequest(request);
-        }
+        selectedDevice.submitRequest(request);
     }
 
-    private Device selectDevice(Priority priority) {
+    private Device selectDevice() {
         while (true) {
-            if (pointer.getValue() == 0) {
-                if (device1.isAvailable()) {
-                    pointer.increment();
-                    return device1;
-                }
+            Device device = devices.get(pointer.getValue());
+            if (device.isAvailable()) {
                 pointer.increment();
+                return device;
             }
-            else if (pointer.getValue() == 1) {
-                if (device2.isAvailable()) {
-                    pointer.increment();
-                    return device2;
-                }
-                pointer.increment();
-            }
-            else if (pointer.getValue() == 2) {
-                if (device3.isAvailable()) {
-                    pointer.increment();
-                    return device3;
-                }
-                pointer.increment();
-            }
+            pointer.increment();
         }
     }
 
     // Методы для получения статистики
-    public int getDevice1ProcessedCount() {
-        return device1.getProcessedCount();
-    }
-    public int getDevice2ProcessedCount() {
-        return device2.getProcessedCount();
-    }
-    public int getDevice3ProcessedCount() {
-        return device3.getProcessedCount();
+    public int getDeviceProcessedCount(int deviceIndex) {
+        if (deviceIndex >= 0 && deviceIndex < devices.size()) {
+            return devices.get(deviceIndex).getProcessedCount();
+        }
+        return -1;
     }
 
-    public Request getDevice1CurrentRequest() { return device1.getCurrentRequest(); }
-    public Request getDevice2CurrentRequest() { return device2.getCurrentRequest(); }
-    public Request getDevice3CurrentRequest() { return device3.getCurrentRequest(); }
+    public int getDeviceCount() {
+        return devices.size();
+    }
 
-    public long getServTimeCritial() {
-        return device1.getTimeOnDeviceCritical() + device2.getTimeOnDeviceCritical() +
-                device3.getTimeOnDeviceCritical();
+    public Request getDeviceCurrentRequest(int deviceIndex) {
+        if (deviceIndex >= 0 && deviceIndex < devices.size()) {
+            return devices.get(deviceIndex).getCurrentRequest();
+        }
+        return null;
+    }
+
+    public long getServTimeCritical() {
+        long totalTime = 0;
+        for (Device device : devices) {
+            totalTime += device.getTimeOnDeviceCritical();
+        }
+        return totalTime;
     }
 
     public long getServTimeWarning() {
-        return device1.getTimeOnDeviceWarning() + device2.getTimeOnDeviceWarning() +
-                device3.getTimeOnDeviceWarning();
+        long totalTime = 0;
+        for (Device device : devices) {
+            totalTime += device.getTimeOnDeviceWarning();
+        }
+        return totalTime;
     }
 
     public long getServTimeMetrics() {
-        return device1.getTimeOnDeviceMetrics() + device2.getTimeOnDeviceMetrics() +
-                device3.getTimeOnDeviceMetrics();
+        long totalTime = 0;
+        for (Device device : devices) {
+            totalTime += device.getTimeOnDeviceMetrics();
+        }
+        return totalTime;
     }
 
     public ArrayList<Long> getArrayServTimeCritical() {
         ArrayList<Long> onDeviceTime = new ArrayList<>();
-        onDeviceTime.addAll(device1.getReqTimeOnDeviceCritical());
-        onDeviceTime.addAll(device2.getReqTimeOnDeviceCritical());
-        onDeviceTime.addAll(device3.getReqTimeOnDeviceCritical());
+        for (Device device : devices) {
+            onDeviceTime.addAll(device.getReqTimeOnDeviceCritical());
+        }
         return onDeviceTime;
     }
 
     public ArrayList<Long> getArrayServTimeWarning() {
         ArrayList<Long> onDeviceTime = new ArrayList<>();
-        onDeviceTime.addAll(device1.getReqTimeOnDeviceWarning());
-        onDeviceTime.addAll(device2.getReqTimeOnDeviceWarning());
-        onDeviceTime.addAll(device3.getReqTimeOnDeviceWarning());
+        for (Device device : devices) {
+            onDeviceTime.addAll(device.getReqTimeOnDeviceWarning());
+        }
         return onDeviceTime;
     }
 
     public ArrayList<Long> getArrayServTimeMetrics() {
         ArrayList<Long> onDeviceTime = new ArrayList<>();
-        onDeviceTime.addAll(device1.getReqTimeOnDeviceMetrics());
-        onDeviceTime.addAll(device2.getReqTimeOnDeviceMetrics());
-        onDeviceTime.addAll(device3.getReqTimeOnDeviceMetrics());
+        for (Device device : devices) {
+            onDeviceTime.addAll(device.getReqTimeOnDeviceMetrics());
+        }
         return onDeviceTime;
     }
 
-    public int getProcessedCount(int num) {
-        switch(num) {
-            case 0 -> { return device1.getProcessedCount(); }
-            case 1 -> { return device2.getProcessedCount(); }
-            case 2 -> { return device3.getProcessedCount(); }
-            default -> { return -1; }
-        }
+    public int getProcessedCount(int deviceIndex) {
+        return getDeviceProcessedCount(deviceIndex);
     }
 
-    public long getBusyTime(int num) {
-        switch(num) {
-            case 0 -> { return device1.getBusyTime(); }
-            case 1 -> { return device2.getBusyTime(); }
-            case 2 -> { return device3.getBusyTime(); }
-            default -> { return -1; }
+    public long getBusyTime(int deviceIndex) {
+        if (deviceIndex >= 0 && deviceIndex < devices.size()) {
+            return devices.get(deviceIndex).getBusyTime();
         }
+        return -1;
     }
 
     public int getTotal() {
@@ -198,10 +183,26 @@ public class SelectionDispatcher implements Runnable {
     public void stop() {
         running.set(false);
 
-        // Также останавливаем устройства
-        device1.stop();
-        device2.stop();
-        device3.stop();
+        // Останавливаем все устройства
+        for (Device device : devices) {
+            device.stop();
+        }
     }
 
+    // Дополнительные методы для удобства
+    public Device getDevice(int index) {
+        if (index >= 0 && index < devices.size()) {
+            return devices.get(index);
+        }
+        return null;
+    }
+
+    public String getDeviceName(int index) {
+        Device device = getDevice(index);
+        return device != null ? device.getName() : "";
+    }
+
+    public long getPause() {
+        return pause/total;
+    }
 }
